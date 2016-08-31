@@ -1,5 +1,6 @@
 # Changelog
 
-## 2.0.0-a1
+## 2.0.0-a3
 
-* Test release
+* Update Autofac dependency to 4.1.0
+
