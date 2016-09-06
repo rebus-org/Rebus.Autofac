@@ -14,12 +14,12 @@
     <tags>rebus ioc autofac</tags>
     <iconUrl>https://github.com/mookid8000/Rebus/raw/master/artwork/little_rebusbus2_copy-200x200.png</iconUrl>
     <dependencies>
-      <dependency id="Rebus" version="2.0.0-a3" />
+      <dependency id="Rebus" version="2.0.0-a9" />
       <dependency id="Autofac" version="4.1.0" />
     </dependencies>
   </metadata>
   <files>
-    <file src="bin\Release\Rebus.Autofac.dll" target="lib\NET45" />
-    <file src="bin\Release\Rebus.Autofac.xml" target="lib\NET45" />
+    <file src="bin\Release\Rebus.Autofac.dll" target="lib\NET452" />
+    <file src="bin\Release\Rebus.Autofac.xml" target="lib\NET452" />
   </files>
 </package>
