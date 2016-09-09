@@ -7,3 +7,7 @@
 ## 2.0.0-a2
 
 * Test build
+
+## 2.0.0-b01
+
+* Test release
