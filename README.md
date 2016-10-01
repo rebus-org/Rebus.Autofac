@@ -1,4 +1,4 @@
-# Rebus.AmazonSQS
+# Rebus.Autofac
 
 [![install from nuget](https://img.shields.io/nuget/v/Rebus.Autofac.svg?style=flat-square)](https://www.nuget.org/packages/Rebus.Autofac)
 
