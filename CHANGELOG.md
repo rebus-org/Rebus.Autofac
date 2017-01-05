@@ -15,3 +15,7 @@
 ## 2.0.0
 
 * Release 2.0.0
+
+## 3.0.0
+
+* Update to Rebus 3

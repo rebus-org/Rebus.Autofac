@@ -25,6 +25,7 @@ namespace Rebus.Autofac
         /// </summary>
         public AutofacContainerAdapter(IContainer container)
         {
+            if (container == null) throw new ArgumentNullException(nameof(container));
             _container = container;
         }
 
@@ -67,6 +68,11 @@ namespace Rebus.Autofac
             containerBuilder
                 .RegisterInstance(bus)
                 .SingleInstance();
+
+            containerBuilder
+                .Register(c => c.Resolve<IBus>().Advanced.SyncBus)
+                .InstancePerDependency()
+                .ExternallyOwned();
             
             containerBuilder
                 .Register(c =>
