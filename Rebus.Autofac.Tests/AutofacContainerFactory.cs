@@ -42,8 +42,9 @@ namespace Rebus.Autofac.Tests
 
         static IEnumerable<Type> GetHandlerInterfaces<THandler>() where THandler : class, IHandleMessages
         {
-            return typeof(THandler).GetInterfaces().Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IHandleMessages<>));
+            return typeof(THandler)
+                .GetInterfaces()
+                .Where(i => i.HasGenericTypeDefinition(typeof(IHandleMessages<>)));
         }
-
     }
 }
