@@ -20,10 +20,11 @@
 
 * Update to Rebus 3
 
-## 4.0.0-b02
+## 4.0.0-b03
 
 * Update to Rebus 4
 * Add .NET Core support (netstandard1.6)
 * Fix csproj - thanks [robvanpamel]
+* Update deps to b06
 
 [robvanpamel]: https://github.com/robvanpamel
