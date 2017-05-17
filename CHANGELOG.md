@@ -20,12 +20,12 @@
 
 * Update to Rebus 3
 
-## 4.0.0-b04
+## 4.0.0-b05
 
 * Update to Rebus 4
 * Add .NET Core support (netstandard1.6)
 * Fix csproj - thanks [robvanpamel]
-* Update deps to b06
+* Update deps to b09
 * Update Autofac dep to 4.5.0
 
 [robvanpamel]: https://github.com/robvanpamel
