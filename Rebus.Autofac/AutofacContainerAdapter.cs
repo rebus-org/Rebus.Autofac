@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Autofac;
+using Autofac.Core;
 using Rebus.Activation;
 using Rebus.Bus;
 using Rebus.Extensions;
@@ -45,8 +46,8 @@ namespace Rebus.Autofac
                     return scope;
                 });
 
-            var handledMessageTypes = typeof (TMessage).GetBaseTypes()
-                .Concat(new[] {typeof (TMessage)});
+            var handledMessageTypes = typeof(TMessage).GetBaseTypes()
+                .Concat(new[] { typeof(TMessage) });
 
             return handledMessageTypes
                 .SelectMany(handledMessageType =>
@@ -64,30 +65,35 @@ namespace Rebus.Autofac
         /// </summary>
         public void SetBus(IBus bus)
         {
+            if (_container.ComponentRegistry.IsRegistered(new TypedService(typeof(IBus))))
+            {
+                throw new InvalidOperationException("Cannot add another IBus registration to this container. If you want multiple bus instances in a single process, please host them in one container per bus instance.");
+            }
+
             var containerBuilder = new ContainerBuilder();
-            
+
             containerBuilder
                 .RegisterInstance(bus)
-                .SingleInstance();
+                    .SingleInstance();
 
             containerBuilder
                 .Register(c => c.Resolve<IBus>().Advanced.SyncBus)
-                .InstancePerDependency()
-                .ExternallyOwned();
-            
+                    .InstancePerDependency()
+                    .ExternallyOwned();
+
             containerBuilder
                 .Register(c =>
-                {
-                    var currentMessageContext = MessageContext.Current;
-                    if (currentMessageContext == null)
                     {
-                        throw new InvalidOperationException("Attempted to inject the current message context from MessageContext.Current, but it was null! Did you attempt to resolve IMessageContext from outside of a Rebus message handler?");
-                    }
-                    return currentMessageContext;
-                })
-                .InstancePerDependency()
-                .ExternallyOwned();
-            
+                        var currentMessageContext = MessageContext.Current;
+                        if (currentMessageContext == null)
+                        {
+                            throw new InvalidOperationException("Attempted to inject the current message context from MessageContext.Current, but it was null! Did you attempt to resolve IMessageContext from outside of a Rebus message handler?");
+                        }
+                        return currentMessageContext;
+                    })
+                    .InstancePerDependency()
+                    .ExternallyOwned();
+
             containerBuilder.Update(_container);
         }
     }
