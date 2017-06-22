@@ -4,7 +4,7 @@ using Rebus.Tests.Contracts.Activation;
 namespace Rebus.Autofac.Tests
 {
     [TestFixture]
-    public class AutofacRealContainerTests : RealContainerTests<AutofacContainerFactory>
+    public class AutofacRealContainerTests : RealContainerTests<AutofacActivationContext>
     {
     }
 }
