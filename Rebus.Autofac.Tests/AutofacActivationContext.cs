@@ -25,10 +25,10 @@ namespace Rebus.Autofac.Tests
 
         public IBus CreateBus(Action<IHandlerRegistry> configureHandlers, Func<RebusConfigurer, RebusConfigurer> configureBus, out IActivatedContainer container)
         {
-            var _containerBuilder = new ContainerBuilder();
-            configureHandlers(new HandlerRegistry(_containerBuilder));
+            var containerBuilder = new ContainerBuilder();
+            configureHandlers(new HandlerRegistry(containerBuilder));
 
-            var autoFacContainer = _containerBuilder.Build();
+            var autoFacContainer = containerBuilder.Build();
             container = new ActivatedContainer(autoFacContainer);
             
             return configureBus(Configure.With(new AutofacContainerAdapter(autoFacContainer))).Start();
