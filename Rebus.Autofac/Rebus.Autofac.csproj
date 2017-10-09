@@ -3,7 +3,7 @@
  <PropertyGroup>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Rebus.Autofac</RootNamespace>
+    <RootNamespace>Rebus</RootNamespace>
     <AssemblyName>Rebus.Autofac</AssemblyName>
     <TargetFrameworks>net45;netstandard1.6</TargetFrameworks>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>

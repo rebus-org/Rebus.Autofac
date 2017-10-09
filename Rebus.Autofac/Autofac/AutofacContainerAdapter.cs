@@ -10,6 +10,7 @@ using Rebus.Extensions;
 using Rebus.Handlers;
 using Rebus.Pipeline;
 using Rebus.Transport;
+
 #pragma warning disable 618
 #pragma warning disable 1998
 
@@ -27,8 +28,7 @@ namespace Rebus.Autofac
         /// </summary>
         public AutofacContainerAdapter(IContainer container)
         {
-            if (container == null) throw new ArgumentNullException(nameof(container));
-            _container = container;
+            _container = container ?? throw new ArgumentNullException(nameof(container));
         }
 
         /// <summary>
