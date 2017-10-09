@@ -16,6 +16,8 @@ namespace Rebus.Autofac
         {
             if (_container == null) throw new InvalidOperationException("This container adapter instance has not had its SetContainer method called");
 
+            await Task.Delay(10);
+
             throw new NotImplementedException();
         }
 
