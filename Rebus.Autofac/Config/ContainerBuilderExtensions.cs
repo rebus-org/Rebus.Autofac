@@ -5,6 +5,7 @@ using Autofac;
 using Autofac.Core;
 using Rebus.Autofac;
 using Rebus.Bus;
+using Rebus.Exceptions;
 using Rebus.Pipeline;
 
 namespace Rebus.Config
@@ -15,30 +16,31 @@ namespace Rebus.Config
     public static class ContainerBuilderExtensions
     {
         const string LongExceptionMessage = 
-            "This particular container builder seems to have had the AddRebus(...) extension called on it more than once, which is unfortunately not allowed. In some cases, this is simply an indication that the configuration code for some reason has been executed more than once, which is probably not intended. If you intended to use one Autofac container to host multiple Rebus instances, please consider using a separate container instance for each Rebus endpoint that you wish to start.";
+            "This particular container builder seems to have had the RegisterRebus(...) extension called on it more than once, which is unfortunately not allowed. In some cases, this is simply an indication that the configuration code for some reason has been executed more than once, which is probably not intended. If you intended to use one Autofac container to host multiple Rebus instances, please consider using a separate container instance for each Rebus endpoint that you wish to start.";
 
         /// <summary>
         /// Makes the necessary registrations in the given <paramref name="containerBuilder"/>, invoking the
         /// <paramref name="configure"/> callback when Rebus needs to be configured.
         /// </summary>
-        public static void AddRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, RebusConfigurer> configure)
+        public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, RebusConfigurer> configure)
         {
             if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
             if (configure == null) throw new ArgumentNullException(nameof(configure));
 
             var activator = new AutofacContainerAdapter2();
 
-            containerBuilder.RegisterBuildCallback(c =>
+            containerBuilder.RegisterBuildCallback(container =>
             {
-                var registrations = c.ComponentRegistry.Registrations;
+                var registrations = container.ComponentRegistry.Registrations;
 
-                if (!HasMultipleBusRegistrations(registrations))
+                if (HasMultipleBusRegistrations(registrations))
                 {
-                    activator.SetContainer(c);
-                    return;
+                    throw new InvalidOperationException(LongExceptionMessage);
                 }
 
-                throw new InvalidOperationException(LongExceptionMessage);
+                activator.SetContainer(container);
+
+                StartBus(container);
             });
 
             containerBuilder
@@ -65,6 +67,18 @@ namespace Rebus.Config
                     return messageContext;
                 })
                 .InstancePerRequest();
+        }
+
+        static void StartBus(IContainer c)
+        {
+            try
+            {
+                c.Resolve<IBus>();
+            }
+            catch (Exception exception)
+            {
+                throw new RebusConfigurationException(exception, "Could not start Rebus");
+            }
         }
 
         static bool HasMultipleBusRegistrations(IEnumerable<IComponentRegistration> registrations) =>

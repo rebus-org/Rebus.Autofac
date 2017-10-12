@@ -10,17 +10,21 @@ using Rebus.Tests.Contracts.Activation;
 
 namespace Rebus.Autofac.Tests
 {
-    public class AutofacActivationContext : IActivationContext
+    public class NewAutofacActivationContext : IActivationContext
     {
         public IHandlerActivator CreateActivator(Action<IHandlerRegistry> configureHandlers, out IActivatedContainer container)
         {
-            var containerBuilder = new ContainerBuilder();
-            configureHandlers(new HandlerRegistry(containerBuilder));
+            var builder = new ContainerBuilder();
+            configureHandlers(new HandlerRegistry(builder));
 
-            var autoFacContainer = containerBuilder.Build();
-            container = new ActivatedContainer(autoFacContainer);
+            builder.RegisterRebus();
 
-            return new AutofacContainerAdapter(autoFacContainer);
+            var autofacContainer = builder.Build();
+            container = new ActivatedContainer(autofacContainer);
+
+            var containerAdapter = new AutofacContainerAdapter2();
+            containerAdapter.SetContainer(autofacContainer);
+            return containerAdapter;
         }
 
         public IBus CreateBus(Action<IHandlerRegistry> configureHandlers, Func<RebusConfigurer, RebusConfigurer> configureBus, out IActivatedContainer container)
@@ -28,10 +32,13 @@ namespace Rebus.Autofac.Tests
             var containerBuilder = new ContainerBuilder();
             configureHandlers(new HandlerRegistry(containerBuilder));
 
-            var autoFacContainer = containerBuilder.Build();
-            container = new ActivatedContainer(autoFacContainer);
-            
-            return configureBus(Configure.With(new AutofacContainerAdapter(autoFacContainer))).Start();
+            var autofacContainer = containerBuilder.Build();
+            container = new ActivatedContainer(autofacContainer);
+
+            var containerAdapter = new AutofacContainerAdapter2();
+            containerAdapter.SetContainer(autofacContainer);
+            return configureBus(Configure.With(containerAdapter)).Start();
+
         }
 
         class HandlerRegistry : IHandlerRegistry

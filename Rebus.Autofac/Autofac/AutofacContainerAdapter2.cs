@@ -8,7 +8,7 @@ using Rebus.Transport;
 
 namespace Rebus.Autofac
 {
-    class AutofacContainerAdapter2 : IHandlerActivator
+    public class AutofacContainerAdapter2 : IHandlerActivator
     {
         IContainer _container;
 

@@ -18,15 +18,13 @@ namespace Rebus.Autofac.Tests
         {
             var builder = new ContainerBuilder();
 
-            builder.AddRebus(configure => configure
+            builder.RegisterRebus(configure => configure
                 .Logging(l => l.Console(minLevel: LogLevel.Debug))
                 .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")));
 
             var container = builder.Build();
 
             Using(container);
-
-            container.UseRebus();
         }
 
         [Test]
@@ -34,11 +32,11 @@ namespace Rebus.Autofac.Tests
         {
             var builder = new ContainerBuilder();
 
-            builder.AddRebus(configure => configure
+            builder.RegisterRebus(configure => configure
                 .Logging(l => l.Console(minLevel: LogLevel.Debug))
                 .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")));
 
-            builder.AddRebus(configure => configure
+            builder.RegisterRebus(configure => configure
                 .Logging(l => l.Console(minLevel: LogLevel.Debug))
                 .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")));
 
