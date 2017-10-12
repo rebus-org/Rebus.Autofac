@@ -17,13 +17,11 @@ namespace Rebus.Autofac.Tests
             var builder = new ContainerBuilder();
             configureHandlers(new HandlerRegistry(builder));
 
-            builder.RegisterRebus();
+            var containerAdapter = new AutofacContainerAdapter2(builder, startBus: false);
 
             var autofacContainer = builder.Build();
             container = new ActivatedContainer(autofacContainer);
 
-            var containerAdapter = new AutofacContainerAdapter2();
-            containerAdapter.SetContainer(autofacContainer);
             return containerAdapter;
         }
 
@@ -32,13 +30,12 @@ namespace Rebus.Autofac.Tests
             var containerBuilder = new ContainerBuilder();
             configureHandlers(new HandlerRegistry(containerBuilder));
 
+            var containerAdapter = new AutofacContainerAdapter2(containerBuilder);
+
             var autofacContainer = containerBuilder.Build();
             container = new ActivatedContainer(autofacContainer);
 
-            var containerAdapter = new AutofacContainerAdapter2();
-            containerAdapter.SetContainer(autofacContainer);
             return configureBus(Configure.With(containerAdapter)).Start();
-
         }
 
         class HandlerRegistry : IHandlerRegistry
