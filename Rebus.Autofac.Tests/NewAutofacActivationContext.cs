@@ -7,6 +7,7 @@ using Rebus.Bus;
 using Rebus.Config;
 using Rebus.Handlers;
 using Rebus.Tests.Contracts.Activation;
+// ReSharper disable ArgumentsStyleLiteral
 
 namespace Rebus.Autofac.Tests
 {
@@ -17,7 +18,7 @@ namespace Rebus.Autofac.Tests
             var builder = new ContainerBuilder();
             configureHandlers(new HandlerRegistry(builder));
 
-            var containerAdapter = new AutofacContainerAdapter2(builder, startBus: false);
+            var containerAdapter = new AutofacContainerAdapter2(builder, c => {}, startBus: false);
 
             var autofacContainer = builder.Build();
             container = new ActivatedContainer(autofacContainer);
@@ -30,12 +31,12 @@ namespace Rebus.Autofac.Tests
             var containerBuilder = new ContainerBuilder();
             configureHandlers(new HandlerRegistry(containerBuilder));
 
-            var containerAdapter = new AutofacContainerAdapter2(containerBuilder);
+            new AutofacContainerAdapter2(containerBuilder, c => configureBus(c));
 
             var autofacContainer = containerBuilder.Build();
             container = new ActivatedContainer(autofacContainer);
 
-            return configureBus(Configure.With(containerAdapter)).Start();
+            return container.ResolveBus();
         }
 
         class HandlerRegistry : IHandlerRegistry

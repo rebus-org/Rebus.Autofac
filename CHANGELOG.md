@@ -28,5 +28,10 @@
 * Update Autofac dep to 4.5.0
 * Update contracts dep - thanks [trevorreeves]
 
+## 5.0.0
+
+* Change API to work better with the Autofac container builder - no more `.Update` :)
+
+
 [robvanpamel]: https://github.com/robvanpamel
 [trevorreeves]: https://github.com/trevorreeves
