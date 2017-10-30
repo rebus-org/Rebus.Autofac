@@ -7,9 +7,4 @@ namespace Rebus.Autofac.Tests
     public class AutofacContainerTests : ContainerTests<AutofacActivationContext>
     {
     }
-
-    [TestFixture]
-    public class NewAutofacContainerTests : ContainerTests<NewAutofacActivationContext>
-    {
-    }
 }

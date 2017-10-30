@@ -19,7 +19,7 @@ namespace Rebus.Config
             if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
             if (configure == null) throw new ArgumentNullException(nameof(configure));
 
-            new AutofacContainerAdapter2(containerBuilder, configurer => configure(configurer));
+            new AutofacHandlerActivator(containerBuilder, configurer => configure(configurer));
         }
     }
 }

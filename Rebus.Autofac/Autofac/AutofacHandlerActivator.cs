@@ -15,14 +15,14 @@ using Rebus.Transport;
 
 namespace Rebus.Autofac
 {
-    class AutofacContainerAdapter2 : IHandlerActivator
+    class AutofacHandlerActivator : IHandlerActivator
     {
         const string LongExceptionMessage =
             "This particular container builder seems to have had the RegisterRebus(...) extension called on it more than once, which is unfortunately not allowed. In some cases, this is simply an indication that the configuration code for some reason has been executed more than once, which is probably not intended. If you intended to use one Autofac container to host multiple Rebus instances, please consider using a separate container instance for each Rebus endpoint that you wish to start.";
 
         IContainer _container;
 
-        public AutofacContainerAdapter2(ContainerBuilder containerBuilder, Action<RebusConfigurer> configureBus, bool startBus = true)
+        public AutofacHandlerActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer> configureBus, bool startBus = true)
         {
             if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
             if (configureBus == null) throw new ArgumentNullException(nameof(configureBus));
