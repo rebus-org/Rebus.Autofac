@@ -18,7 +18,7 @@ namespace Rebus.Autofac.Tests
             var builder = new ContainerBuilder();
             configureHandlers(new HandlerRegistry(builder));
 
-            var containerAdapter = new AutofacHandlerActivator(builder, c => {}, startBus: false);
+            var containerAdapter = new AutofacHandlerActivator(builder, (conf,con) => {}, startBus: false);
 
             var autofacContainer = builder.Build();
             container = new ActivatedContainer(autofacContainer);
@@ -31,7 +31,7 @@ namespace Rebus.Autofac.Tests
             var containerBuilder = new ContainerBuilder();
             configureHandlers(new HandlerRegistry(containerBuilder));
 
-            new AutofacHandlerActivator(containerBuilder, c => configureBus(c));
+            new AutofacHandlerActivator(containerBuilder, (conf, con) => configureBus(conf));
 
             var autofacContainer = containerBuilder.Build();
             container = new ActivatedContainer(autofacContainer);

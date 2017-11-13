@@ -32,6 +32,9 @@
 
 * Change API to work better with the Autofac container builder - no more `.Update` :)
 
+## 5.1.0
+
+* Additional `RegisterRebus` overload that passes `IComponentContext` to the configuration method
 
 [robvanpamel]: https://github.com/robvanpamel
 [trevorreeves]: https://github.com/trevorreeves

@@ -23,7 +23,7 @@ namespace Rebus.Autofac
 
         IContainer _container;
 
-        public AutofacHandlerActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer> configureBus, bool startBus = true)
+        public AutofacHandlerActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer, IComponentContext> configureBus, bool startBus = true)
         {
             if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
             if (configureBus == null) throw new ArgumentNullException(nameof(configureBus));
@@ -49,7 +49,7 @@ namespace Rebus.Autofac
                 .Register(context =>
                 {
                     var rebusConfigurer = Configure.With(this);
-                    configureBus.Invoke(rebusConfigurer);
+                    configureBus.Invoke(rebusConfigurer, context);
                     return rebusConfigurer.Start();
                 })
                 .SingleInstance();
