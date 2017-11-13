@@ -21,7 +21,10 @@ builder.RegisterRebus((configurer, context) => configurer
         o.SetMaxParallelism(30);
     }));
 
-var container = builder.Build();
+// the bus is registered now, but it has not been started.... make all your other registrations, and then:
+var container = builder.Build(); //< start the bus
+
+
 
 // now your application is running
 
