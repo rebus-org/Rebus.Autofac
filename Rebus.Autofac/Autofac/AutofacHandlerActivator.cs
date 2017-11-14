@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -20,6 +21,8 @@ namespace Rebus.Autofac
     {
         const string LongExceptionMessage =
             "This particular container builder seems to have had the RegisterRebus(...) extension called on it more than once, which is unfortunately not allowed. In some cases, this is simply an indication that the configuration code for some reason has been executed more than once, which is probably not intended. If you intended to use one Autofac container to host multiple Rebus instances, please consider using a separate container instance for each Rebus endpoint that you wish to start.";
+
+        readonly ConcurrentDictionary<Type, Type[]> _resolveTypes = new ConcurrentDictionary<Type, Type[]>();
 
         IContainer _container;
 
@@ -95,28 +98,33 @@ namespace Rebus.Autofac
         /// </summary>
         public async Task<IEnumerable<IHandleMessages<TMessage>>> GetHandlers<TMessage>(TMessage message, ITransactionContext transactionContext)
         {
+            ILifetimeScope CreateLifetimeScope()
+            {
+                var scope = _container.BeginLifetimeScope();
+                transactionContext.OnDisposed(() => scope.Dispose());
+                return scope;
+            }
+
             var lifetimeScope = transactionContext
-                .GetOrAdd("current-autofac-lifetime-scope", () =>
-                {
-                    var scope = _container.BeginLifetimeScope();
+                .GetOrAdd("current-autofac-lifetime-scope", CreateLifetimeScope);
 
-                    transactionContext.OnDisposed(() => scope.Dispose());
+            Type[] FindTypesToResolve(Type messageType)
+            {
+                var typesToResolve = messageType.GetBaseTypes()
+                    .Concat(new[] {messageType})
+                    .Select(handledMessageType =>
+                    {
+                        var implementedInterface = typeof(IHandleMessages<>).MakeGenericType(handledMessageType);
+                        var implementedInterfaceSequence = typeof(IEnumerable<>).MakeGenericType(implementedInterface);
+                        return implementedInterfaceSequence;
+                    });
 
-                    return scope;
-                });
+                return typesToResolve.ToArray();
+            }
 
-            var handledMessageTypes = typeof(TMessage).GetBaseTypes()
-                .Concat(new[] { typeof(TMessage) });
+            var types = _resolveTypes.GetOrAdd(typeof(TMessage), FindTypesToResolve);
 
-            return handledMessageTypes
-                .SelectMany(handledMessageType =>
-                {
-                    var implementedInterface = typeof(IHandleMessages<>).MakeGenericType(handledMessageType);
-                    var implementedInterfaceSequence = typeof(IEnumerable<>).MakeGenericType(implementedInterface);
-
-                    return (IEnumerable<IHandleMessages>)lifetimeScope.Resolve(implementedInterfaceSequence);
-                })
-                .Cast<IHandleMessages<TMessage>>();
+            return types.SelectMany(type => (IEnumerable<IHandleMessages<TMessage>>) lifetimeScope.Resolve(type));
         }
 
         void SetContainer(IContainer container)

@@ -36,5 +36,9 @@
 
 * Additional `RegisterRebus` overload that passes `IComponentContext` to the configuration method
 
+## 5.2.0
+
+* Add Rebus handler registration extensions on `ContainerBuilder` and improve resolution performance
+
 [robvanpamel]: https://github.com/robvanpamel
 [trevorreeves]: https://github.com/trevorreeves

@@ -1,6 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using Autofac;
 using Rebus.Autofac;
+using Rebus.Handlers;
+using Rebus.Internals;
+
 // ReSharper disable ObjectCreationAsStatement
 
 namespace Rebus.Config
@@ -33,5 +39,35 @@ namespace Rebus.Config
 
             new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer, context));
         }
+
+        /// <summary>
+        /// Registers all Rebus message handler types found in the assembly of <typeparamref name="T"/>
+        /// </summary>
+        public static void RegisterHandlersFromAssemblyOf<T>(this ContainerBuilder builder)
+        {
+            if (builder == null) throw new ArgumentNullException(nameof(builder));
+
+            builder.RegisterAssemblyTypes(typeof(T).GetAssembly())
+                .Where(t => !t.ItIsAbstract() && t.GetInterfaces().Any(IsRebusHandler))
+                .AsImplementedInterfaces()
+                .InstancePerDependency()
+                .PropertiesAutowired();
+        }
+
+        /// <summary>
+        /// Registers the given type as a Rebus message handler
+        /// </summary>
+        public static void RegisterHandler<T>(this ContainerBuilder builder) where T : IHandleMessages
+        {
+            if (builder == null) throw new ArgumentNullException(nameof(builder));
+
+            var implementedHandlerTypes = typeof(T).GetInterfaces().Where(IsRebusHandler).ToArray();
+
+            builder.RegisterType(typeof(T)).As(implementedHandlerTypes)
+                .InstancePerDependency()
+                .PropertiesAutowired();
+        }
+
+        static bool IsRebusHandler(Type i) => i.ItIsGenericType() && i.GetGenericTypeDefinition() == typeof(IHandleMessages<>);
     }
 }
