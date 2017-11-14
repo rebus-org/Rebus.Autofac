@@ -56,12 +56,48 @@ namespace Rebus.Autofac.Tests
         }
 
         [Test]
-        public async Task RealBusAndStuff()
+        public async Task RealBusAndStuff_Single()
         {
             var builder = new ContainerBuilder();
 
+            builder.RegisterHandler<FirstHandler>();
+            builder.RegisterHandler<SecondHandler>();
+
             builder.RegisterType<EventAggregator>().SingleInstance();
+            builder.RegisterRebus(
+                configurer => configurer
+                    .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "doesn't matter"))
+                    .Options(o =>
+                    {
+                        o.SetNumberOfWorkers(1);
+                        o.SetMaxParallelism(1);
+                    })
+            );
+
+            using (var container = builder.Build())
+            {
+                var bus = container.Resolve<IBus>();
+
+                await bus.SendLocal("HEJ MED DIG");
+                await bus.SendLocal("HVORDAN GÅR DET?");
+
+                await Task.Delay(500);
+
+                var events = container.Resolve<EventAggregator>().ToList();
+
+                Assert.That(events.Count, Is.EqualTo(4));
+                Console.WriteLine(string.Join(Environment.NewLine, events));
+            }
+        }
+
+        [Test]
+        public async Task RealBusAndStuff_Multiple()
+        {
+            var builder = new ContainerBuilder();
+
             builder.RegisterHandlersFromAssemblyOf<FirstHandler>();
+
+            builder.RegisterType<EventAggregator>().SingleInstance();
             builder.RegisterRebus(
                 configurer => configurer
                     .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "doesn't matter"))
