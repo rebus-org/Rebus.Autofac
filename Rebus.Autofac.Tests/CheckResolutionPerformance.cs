@@ -8,6 +8,7 @@ using NUnit.Framework;
 using Rebus.Config;
 using Rebus.Handlers;
 using Rebus.Transport;
+// ReSharper disable ArgumentsStyleLiteral
 
 namespace Rebus.Autofac.Tests
 {
@@ -118,7 +119,7 @@ AVG: 4,026
             builder.RegisterHandler<PolymorphicMessageHandler>();
             builder.RegisterHandler<PolymorphicMessageHandler2>();
 
-            var activator = new AutofacHandlerActivator(builder, (configurer, context) => { }, false);
+            var activator = new AutofacHandlerActivator(builder, (configurer, context) => { }, startBus: false, enablePolymorphicDispatch: true);
             var timeSpans = new List<TimeSpan>();
 
             using (var container = builder.Build())

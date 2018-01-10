@@ -1,12 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Autofac;
 using Rebus.Autofac;
 using Rebus.Handlers;
 using Rebus.Internals;
-
+// ReSharper disable ArgumentsStyleNamedExpression
+// ReSharper disable ArgumentsStyleLiteral
 // ReSharper disable ObjectCreationAsStatement
 
 namespace Rebus.Config
@@ -25,7 +25,7 @@ namespace Rebus.Config
             if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
             if (configure == null) throw new ArgumentNullException(nameof(configure));
 
-            new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer));
+            new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer), startBus: true, enablePolymorphicDispatch: false);
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace Rebus.Config
             if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
             if (configure == null) throw new ArgumentNullException(nameof(configure));
 
-            new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer, context));
+            new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer, context), startBus: true, enablePolymorphicDispatch: false);
         }
 
         /// <summary>

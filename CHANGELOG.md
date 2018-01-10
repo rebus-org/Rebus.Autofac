@@ -40,5 +40,9 @@
 
 * Add Rebus handler registration extensions on `ContainerBuilder` and improve resolution performance
 
+## 6.0.0-b01
+
+* Move polymorphic handler resolution resposiblity to the container. If contravariant lookup is wanted, one must register `ContravariantRegistrationSource` on the `ContainerBuilder`
+
 [robvanpamel]: https://github.com/robvanpamel
 [trevorreeves]: https://github.com/trevorreeves

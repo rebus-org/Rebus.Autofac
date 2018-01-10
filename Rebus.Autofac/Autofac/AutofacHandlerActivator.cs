@@ -1,15 +1,14 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Core;
+using Autofac.Features.Variance;
 using Rebus.Activation;
 using Rebus.Bus;
 using Rebus.Config;
 using Rebus.Exceptions;
-using Rebus.Extensions;
 using Rebus.Handlers;
 using Rebus.Pipeline;
 using Rebus.Transport;
@@ -22,11 +21,11 @@ namespace Rebus.Autofac
         const string LongExceptionMessage =
             "This particular container builder seems to have had the RegisterRebus(...) extension called on it more than once, which is unfortunately not allowed. In some cases, this is simply an indication that the configuration code for some reason has been executed more than once, which is probably not intended. If you intended to use one Autofac container to host multiple Rebus instances, please consider using a separate container instance for each Rebus endpoint that you wish to start.";
 
-        readonly ConcurrentDictionary<Type, Type[]> _resolveTypes = new ConcurrentDictionary<Type, Type[]>();
+        //readonly ConcurrentDictionary<Type, Type[]> _resolveTypes = new ConcurrentDictionary<Type, Type[]>();
 
         IContainer _container;
 
-        public AutofacHandlerActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer, IComponentContext> configureBus, bool startBus = true)
+        public AutofacHandlerActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer, IComponentContext> configureBus, bool startBus, bool enablePolymorphicDispatch)
         {
             if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
             if (configureBus == null) throw new ArgumentNullException(nameof(configureBus));
@@ -47,6 +46,11 @@ namespace Rebus.Autofac
                     StartBus(container);
                 }
             });
+
+            if (enablePolymorphicDispatch)
+            {
+                containerBuilder.RegisterSource(new ContravariantRegistrationSource());
+            }
 
             containerBuilder
                 .Register(context =>
@@ -108,23 +112,7 @@ namespace Rebus.Autofac
             var lifetimeScope = transactionContext
                 .GetOrAdd("current-autofac-lifetime-scope", CreateLifetimeScope);
 
-            Type[] FindTypesToResolve(Type messageType)
-            {
-                var typesToResolve = messageType.GetBaseTypes()
-                    .Concat(new[] {messageType})
-                    .Select(handledMessageType =>
-                    {
-                        var implementedInterface = typeof(IHandleMessages<>).MakeGenericType(handledMessageType);
-                        var implementedInterfaceSequence = typeof(IEnumerable<>).MakeGenericType(implementedInterface);
-                        return implementedInterfaceSequence;
-                    });
-
-                return typesToResolve.ToArray();
-            }
-
-            var types = _resolveTypes.GetOrAdd(typeof(TMessage), FindTypesToResolve);
-
-            return types.SelectMany(type => (IEnumerable<IHandleMessages<TMessage>>) lifetimeScope.Resolve(type));
+            return lifetimeScope.Resolve<IEnumerable<IHandleMessages<TMessage>>>();
         }
 
         void SetContainer(IContainer container)
