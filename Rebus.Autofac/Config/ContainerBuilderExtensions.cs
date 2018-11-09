@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Reflection;
 using Autofac;
 using Rebus.Autofac;
 using Rebus.Handlers;
