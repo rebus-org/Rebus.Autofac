@@ -91,10 +91,48 @@ namespace Rebus.Autofac.Tests.Bugs
         }
 
         [Test]
-        [Ignore("This logic is implemented in AutofacHandlerActivator as some additional logic, which is triggered when a message compatible with IFailed<TMessage> is detected")]
-        public async Task ResolvesFailedOfBaseClass()
+        public async Task ResolvesFailedOfBaseClass_FailedMessageWrapper()
         {
             var builder = new ContainerBuilder();
+            builder.RegisterSource(new ContravariantRegistrationSource());
+            builder.RegisterHandler<TestHandler>();
+
+            var activator = new AutofacHandlerActivator(builder, (_, __) => { }, startBus: false, enablePolymorphicDispatch: true);
+            using (var container = builder.Build())
+            using (var scope = new RebusTransactionScope())
+            {
+                var handlers = await activator.GetHandlers<DerivedMessage>(null, scope.TransactionContext);
+                Assert.That(handlers, Is.Not.Empty, "resolving handlers for derived messages failed");
+
+                var handlersFailed = await activator.GetHandlers<FailedMessage<DerivedMessage>>(null, scope.TransactionContext);
+                Assert.That(handlersFailed, Is.Not.Empty, "resolving handlers for failed derived messages failed");
+            }
+        }
+
+        [Test]
+        public async Task ResolvesFailedOfBaseClass_SpecialWrapper()
+        {
+            var builder = new ContainerBuilder();
+            builder.RegisterSource(new ContravariantRegistrationSource());
+            builder.RegisterHandler<TestHandler>();
+
+            var activator = new AutofacHandlerActivator(builder, (_, __) => { }, startBus: false, enablePolymorphicDispatch: true);
+            using (var container = builder.Build())
+            using (var scope = new RebusTransactionScope())
+            {
+                var handlers = await activator.GetHandlers<DerivedMessage>(null, scope.TransactionContext);
+                Assert.That(handlers, Is.Not.Empty, "resolving handlers for derived messages failed");
+
+                var handlersFailed = await activator.GetHandlers<SpecialFailedMessage>(null, scope.TransactionContext);
+                Assert.That(handlersFailed, Is.Not.Empty, "resolving handlers for failed derived messages failed");
+            }
+        }
+
+        [Test]
+        public async Task ResolvesFailedOfBaseClass_FailedInterface()
+        {
+            var builder = new ContainerBuilder();
+            builder.RegisterSource(new ContravariantRegistrationSource());
             builder.RegisterHandler<TestHandler>();
 
             var activator = new AutofacHandlerActivator(builder, (_, __) => { }, startBus: false, enablePolymorphicDispatch: true);
@@ -109,6 +147,14 @@ namespace Rebus.Autofac.Tests.Bugs
             }
         }
 
+        private class SpecialFailedMessage : IFailed<DerivedMessage>
+        {
+            public DerivedMessage Message { get; set; }
+            public string ErrorDescription { get; set; }
+            public Dictionary<string, string> Headers { get; set; }
+            public IEnumerable<Exception> Exceptions { get; set; }
+        }
+        
         public class FailedMessage<T> : IFailed<T>
         {
             public FailedMessage(T message, string errorDescription, Dictionary<string, string> headers, IEnumerable<Exception> exceptions)

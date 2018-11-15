@@ -12,6 +12,7 @@ using Rebus.Config;
 using Rebus.Exceptions;
 using Rebus.Extensions;
 using Rebus.Handlers;
+using Rebus.Internals;
 using Rebus.Pipeline;
 using Rebus.Retry.Simple;
 using Rebus.Transport;
@@ -116,9 +117,9 @@ namespace Rebus.Autofac
             var resolver = _resolvers.GetOrAdd(typeof(TMessage),
                 messageType =>
                 {
-                    if (messageType.IsGenericType && (messageType == typeof(IFailed<>) || messageType.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IFailed<>))))
+                    if (messageType.IsAssignableTo(typeof(IFailed<>)))
                     {
-                        var containedMessageType = messageType.GetGenericArguments().First();
+                        var containedMessageType = messageType.GetGenericTypeParameters(typeof(IFailed<>)).Single();
                         var additionalTypesToResolveHandlersFor = containedMessageType.GetBaseTypes();
                         var typesToResolve = new[] { containedMessageType }
                             .Concat(additionalTypesToResolveHandlersFor)
