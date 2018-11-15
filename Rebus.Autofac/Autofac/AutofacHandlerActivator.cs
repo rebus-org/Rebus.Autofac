@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,8 +10,10 @@ using Rebus.Activation;
 using Rebus.Bus;
 using Rebus.Config;
 using Rebus.Exceptions;
+using Rebus.Extensions;
 using Rebus.Handlers;
 using Rebus.Pipeline;
+using Rebus.Retry.Simple;
 using Rebus.Transport;
 #pragma warning disable 1998
 
@@ -110,8 +113,38 @@ namespace Rebus.Autofac
             var lifetimeScope = transactionContext
                 .GetOrAdd("current-autofac-lifetime-scope", CreateLifetimeScope);
 
-            return lifetimeScope.Resolve<IEnumerable<IHandleMessages<TMessage>>>();
+            var resolver = _resolvers.GetOrAdd(typeof(TMessage),
+                messageType =>
+                {
+                    if (messageType.IsGenericType && (messageType == typeof(IFailed<>) || messageType.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IFailed<>))))
+                    {
+                        var containedMessageType = messageType.GetGenericArguments().First();
+                        var additionalTypesToResolveHandlersFor = containedMessageType.GetBaseTypes();
+                        var typesToResolve = new[] { containedMessageType }
+                            .Concat(additionalTypesToResolveHandlersFor)
+                            .Select(type => typeof(IEnumerable<>).MakeGenericType(typeof(IHandleMessages<>).MakeGenericType(typeof(IFailed<>).MakeGenericType(type))))
+                            .ToArray();
+
+                        return scope =>
+                        {
+                            var handlers = new List<IHandleMessages<TMessage>>();
+
+                            foreach (var type in typesToResolve)
+                            {
+                                handlers.AddRange((IEnumerable<IHandleMessages<TMessage>>)scope.Resolve(type));
+                            }
+
+                            return handlers;
+                        };
+                    }
+
+                    return scope => scope.Resolve<IEnumerable<IHandleMessages<TMessage>>>();
+                });
+
+            return (IEnumerable<IHandleMessages<TMessage>>)resolver(lifetimeScope);
         }
+
+        readonly ConcurrentDictionary<Type, Func<ILifetimeScope, IEnumerable<IHandleMessages>>> _resolvers = new ConcurrentDictionary<Type, Func<ILifetimeScope, IEnumerable<IHandleMessages>>>();
 
         void SetContainer(IContainer container)
         {

@@ -71,11 +71,14 @@ namespace Rebus.Autofac.Tests.Bugs
         }
 
         [Test]
+        [Ignore("This logic is implemented in AutofacHandlerActivator as some additional logic, which is triggered when a message compatible with IFailed<TMessage> is detected")]
         public async Task ReadTheFixtureName()
         {
             var builder = new ContainerBuilder();
 
             builder.RegisterHandler<TestHandler>();
+
+            builder.RegisterSource(new ContravariantRegistrationSource());
 
             using (var container = builder.Build())
             {
@@ -88,6 +91,7 @@ namespace Rebus.Autofac.Tests.Bugs
         }
 
         [Test]
+        [Ignore("This logic is implemented in AutofacHandlerActivator as some additional logic, which is triggered when a message compatible with IFailed<TMessage> is detected")]
         public async Task ResolvesFailedOfBaseClass()
         {
             var builder = new ContainerBuilder();
