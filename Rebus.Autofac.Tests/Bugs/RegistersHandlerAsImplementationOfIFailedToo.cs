@@ -1,19 +1,67 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
+using Autofac.Features.Variance;
 using NUnit.Framework;
+using Rebus.Bus;
 using Rebus.Config;
 using Rebus.Handlers;
 using Rebus.Retry.Simple;
+using Rebus.Tests.Contracts;
 using Rebus.Transport;
+using Rebus.Transport.InMem;
 
 namespace Rebus.Autofac.Tests.Bugs
 {
     [TestFixture]
-    public class RegistersHandlerAsImplementationOfIFailedToo
+    public class RegistersHandlerAsImplementationOfIFailedToo : FixtureBase
     {
+        [Test, Description("Verifies that a bus using Autofac and Rebus' handler registration API CAN in fact received failed messages")]
+        public async Task DoItWithTheBus()
+        {
+            var builder = new ContainerBuilder();
+
+            builder.RegisterSource(new ContravariantRegistrationSource());
+
+            builder.RegisterRebus(configurer => configurer
+                .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "2nd-level-test"))
+                .Options(o => o.SimpleRetryStrategy(
+                    secondLevelRetriesEnabled: true,
+                    maxDeliveryAttempts: 1
+                ))
+            );
+
+            builder.RegisterHandler<SecondLevelHandler>();
+
+            var failedMessageWasReceived = new ManualResetEvent(false);
+
+            builder.RegisterInstance(failedMessageWasReceived);
+
+            using (var container = builder.Build())
+            {
+                await container.Resolve<IBus>().SendLocal("HEJ MED DIG MIN VEN");
+
+                if (!failedMessageWasReceived.WaitOne(TimeSpan.FromSeconds(5)))
+                {
+                    throw new AssertionException("Failed message was NOT received within 5s timeout!");
+                }
+            }
+        }
+
+        class SecondLevelHandler : IHandleMessages<string>, IHandleMessages<IFailed<string>>
+        {
+            readonly ManualResetEvent _gotTheFailedMessage;
+
+            public SecondLevelHandler(ManualResetEvent gotTheFailedMessage) => _gotTheFailedMessage = gotTheFailedMessage;
+
+            public Task Handle(string message) => throw new NotImplementedException("MUAHAHAHAHAHA");
+
+            public async Task Handle(IFailed<string> message) => _gotTheFailedMessage.Set();
+        }
+
         [Test]
         public async Task ReadTheFixtureName()
         {
