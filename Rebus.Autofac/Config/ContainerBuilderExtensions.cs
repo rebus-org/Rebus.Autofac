@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
 using Autofac;
 using Rebus.Autofac;
 using Rebus.Handlers;
@@ -46,8 +47,8 @@ namespace Rebus.Config
         {
             if (builder == null) throw new ArgumentNullException(nameof(builder));
 
-            builder.RegisterAssemblyTypes(typeof(T).GetAssembly())
-                .Where(t => !t.ItIsAbstract() && t.GetInterfaces().Any(IsRebusHandler))
+            builder.RegisterAssemblyTypes(typeof(T).Assembly)
+                .Where(t => !t.IsAbstract && t.GetInterfaces().Any(IsRebusHandler))
                 .AsImplementedInterfaces()
                 .InstancePerDependency()
                 .PropertiesAutowired();
@@ -67,6 +68,6 @@ namespace Rebus.Config
                 .PropertiesAutowired();
         }
 
-        static bool IsRebusHandler(Type i) => i.ItIsGenericType() && i.GetGenericTypeDefinition() == typeof(IHandleMessages<>);
+        static bool IsRebusHandler(Type i) => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IHandleMessages<>);
     }
 }

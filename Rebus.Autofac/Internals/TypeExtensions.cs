@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Rebus.Internals
 {
-    internal static class TypeExtensions
+    static class TypeExtensions
     {
         public static bool IsAssignableTo(this Type sourceType, Type targetType)
         {
