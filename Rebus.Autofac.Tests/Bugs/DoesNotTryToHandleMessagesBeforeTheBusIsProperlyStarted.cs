@@ -75,7 +75,6 @@ namespace Rebus.Autofac.Tests.Bugs
             return Configure.With(activator)
                 .Logging(l => l.Use(listLoggerFactory))
                 .Transport(t => t.UseInMemoryTransportAsOneWayClient(network))
-                //.Transport(t => t.UseRa)
                 .Start();
         }
 

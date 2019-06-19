@@ -48,7 +48,7 @@
     <PackageReference Include="microsoft.net.test.sdk" Version="15.9.0" />
     <PackageReference Include="nunit" Version="3.7.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.11.0" />
-    <PackageReference Include="Rebus" Version="5.0.1" />
+    <PackageReference Include="Rebus" Version="5.3.1" />
     <PackageReference Include="Rebus.Tests.Contracts" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
