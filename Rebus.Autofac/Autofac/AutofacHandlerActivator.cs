@@ -25,7 +25,7 @@ namespace Rebus.Autofac
         const string LongExceptionMessage =
             "This particular container builder seems to have had the RegisterRebus(...) extension called on it more than once, which is unfortunately not allowed. In some cases, this is simply an indication that the configuration code for some reason has been executed more than once, which is probably not intended. If you intended to use one Autofac container to host multiple Rebus instances, please consider using a separate container instance for each Rebus endpoint that you wish to start.";
 
-        IContainer _container;
+        volatile IContainer _container;
 
         public AutofacHandlerActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer, IComponentContext> configureBus, bool startBus, bool enablePolymorphicDispatch)
         {
@@ -74,7 +74,7 @@ namespace Rebus.Autofac
                     var messageContext = MessageContext.Current;
                     if (messageContext == null)
                     {
-                        throw new InvalidOperationException("MessageContext.Current was null, which probably means that IMessageContext was resolve outside of a Rebus message handler transaction");
+                        throw new InvalidOperationException("MessageContext.Current was null, which probably means that IMessageContext was resolved outside of a Rebus message handler transaction");
                     }
                     return messageContext;
                 })
