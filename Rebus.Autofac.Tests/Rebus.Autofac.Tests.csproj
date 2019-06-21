@@ -46,10 +46,9 @@
     <ProjectReference Include="..\Rebus.Autofac\Rebus.Autofac.csproj" />
     <PackageReference Include="Autofac" Version="4.5.0" />
     <PackageReference Include="microsoft.net.test.sdk" Version="16.1.1" />
-    <PackageReference Include="nunit" Version="3.7.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
     <PackageReference Include="Rebus" Version="5.3.1" />
-    <PackageReference Include="Rebus.Tests.Contracts" Version="5.0.0" />
+    <PackageReference Include="Rebus.Tests.Contracts" Version="5.2.0" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
