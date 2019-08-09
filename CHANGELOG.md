@@ -40,12 +40,13 @@
 
 * Add Rebus handler registration extensions on `ContainerBuilder` and improve resolution performance
 
-## 6.0.0-b07
+## 6.0.0-b08
 
 * Move polymorphic handler resolution resposiblity to the container. If contravariant lookup is wanted, one must register `ContravariantRegistrationSource` on the `ContainerBuilder`
 * Update to Rebus 5
 * Fix dispatch of `IFailed<TMessage>` when 2nd level retry is enabled - thanks [oliverhanappi]
 * Fix subtle issues and make implementation that fixes dispatch of `IFailed<TMessage>` more elegant - thanks [oliverhanappi]
+* Registration helpers should only register handlers under their implemented handler interfaces
 
 [oliverhanappi]: https://github.com/oliverhanappi
 [robvanpamel]: https://github.com/robvanpamel

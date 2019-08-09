@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Autofac;
@@ -8,6 +9,7 @@ using Rebus.Internals;
 // ReSharper disable ArgumentsStyleNamedExpression
 // ReSharper disable ArgumentsStyleLiteral
 // ReSharper disable ObjectCreationAsStatement
+// ReSharper disable UnusedMember.Global
 
 namespace Rebus.Config
 {
@@ -48,8 +50,8 @@ namespace Rebus.Config
             if (builder == null) throw new ArgumentNullException(nameof(builder));
 
             builder.RegisterAssemblyTypes(typeof(T).Assembly)
-                .Where(t => !t.IsAbstract && t.GetInterfaces().Any(IsRebusHandler))
-                .AsImplementedInterfaces()
+                .Where(t => t.IsClass && !t.IsAbstract && t.GetInterfaces().Any(IsRebusHandler))
+                .As(GetImplementedHandlerInterfaces)
                 .InstancePerDependency()
                 .PropertiesAutowired();
         }
@@ -57,16 +59,18 @@ namespace Rebus.Config
         /// <summary>
         /// Registers the given type as a Rebus message handler
         /// </summary>
-        public static void RegisterHandler<T>(this ContainerBuilder builder) where T : IHandleMessages
+        public static void RegisterHandler<THandler>(this ContainerBuilder builder) where THandler : IHandleMessages
         {
             if (builder == null) throw new ArgumentNullException(nameof(builder));
 
-            var implementedHandlerTypes = typeof(T).GetInterfaces().Where(IsRebusHandler).ToArray();
+            var implementedHandlerTypes = GetImplementedHandlerInterfaces(typeof(THandler)).ToArray();
 
-            builder.RegisterType(typeof(T)).As(implementedHandlerTypes)
+            builder.RegisterType(typeof(THandler)).As(implementedHandlerTypes)
                 .InstancePerDependency()
                 .PropertiesAutowired();
         }
+
+        static IEnumerable<Type> GetImplementedHandlerInterfaces(Type handlerType) => handlerType.GetInterfaces().Where(IsRebusHandler);
 
         static bool IsRebusHandler(Type i) => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IHandleMessages<>);
     }
