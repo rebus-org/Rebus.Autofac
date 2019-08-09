@@ -2,6 +2,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ExceptionServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Core;
@@ -32,28 +34,12 @@ namespace Rebus.Autofac
             if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
             if (configureBus == null) throw new ArgumentNullException(nameof(configureBus));
 
-            containerBuilder.RegisterBuildCallback(container =>
-            {
-                var registrations = container.ComponentRegistry.Registrations;
-
-                if (HasMultipleBusRegistrations(registrations))
-                {
-                    throw new InvalidOperationException(LongExceptionMessage);
-                }
-
-                SetContainer(container);
-
-                if (startBus)
-                {
-                    StartBus(container);
-                }
-            });
-
             if (enablePolymorphicDispatch)
             {
                 containerBuilder.RegisterSource(new ContravariantRegistrationSource());
             }
 
+            // register IBus
             containerBuilder
                 .Register(context =>
                 {
@@ -63,11 +49,13 @@ namespace Rebus.Autofac
                 })
                 .SingleInstance();
 
+            // regiser ISyncBus
             containerBuilder
                 .Register(c => c.Resolve<IBus>().Advanced.SyncBus)
                 .InstancePerDependency()
                 .ExternallyOwned();
 
+            // register IMessageContext
             containerBuilder
                 .Register(c =>
                 {
@@ -80,17 +68,53 @@ namespace Rebus.Autofac
                 })
                 .InstancePerDependency()
                 .ExternallyOwned();
+
+            // get the finished container and maybe start the bus
+            containerBuilder.RegisterBuildCallback(container =>
+            {
+                SetContainer(container);
+
+                if (HasMultipleBusRegistrations(container.ComponentRegistry.Registrations))
+                {
+                    throw new InvalidOperationException(LongExceptionMessage);
+                }
+
+                if (startBus)
+                {
+                    StartBus(container);
+                }
+            });
         }
 
         static void StartBus(IContainer c)
         {
-            try
+            ExceptionDispatchInfo caughtException = null;
+
+            using (var done = new ManualResetEvent(false))
             {
-                c.Resolve<IBus>();
-            }
-            catch (Exception exception)
-            {
-                throw new RebusConfigurationException(exception, "Could not start Rebus");
+                ThreadPool.QueueUserWorkItem(_ =>
+                {
+                    Thread.Sleep(100);
+                    try
+                    {
+                        c.Resolve<IBus>();
+                    }
+                    catch (Exception exception)
+                    {
+                        caughtException = ExceptionDispatchInfo.Capture(exception);
+                    }
+                    finally
+                    {
+                        done.Set();
+                    }
+                });
+
+                done.WaitOne();
+
+                if (caughtException != null)
+                {
+                    throw new RebusConfigurationException(caughtException.SourceException, "Could not start Rebus");
+                }
             }
         }
 
