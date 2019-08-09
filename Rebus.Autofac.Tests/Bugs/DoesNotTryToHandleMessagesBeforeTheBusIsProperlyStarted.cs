@@ -13,6 +13,7 @@ using Rebus.Tests.Contracts.Utilities;
 using Rebus.Transport.InMem;
 // ReSharper disable RedundantArgumentDefaultValue
 // ReSharper disable ClassNeverInstantiated.Local
+// ReSharper disable ArgumentsStyleLiteral
 #pragma warning disable 1998
 
 namespace Rebus.Autofac.Tests.Bugs
@@ -31,6 +32,8 @@ namespace Rebus.Autofac.Tests.Bugs
             var listLoggerFactory = new ListLoggerFactory(detailed: true);
             var sharedCounter = new SharedCounter(numberOfMessages);
 
+            Using(sharedCounter);
+
             // deliver a message for our endpoint
             network.CreateQueue(queueName);
             
@@ -41,14 +44,16 @@ namespace Rebus.Autofac.Tests.Bugs
             // prepare our endpoint
             var builder = new ContainerBuilder();
 
-            builder.RegisterRebus((configurer, context) => configurer
-                .Logging(l => l.Use(listLoggerFactory))
-                .Transport(t => t.UseInMemoryTransport(network, queueName))
-                .Options(o =>
-                {
-                    o.SetNumberOfWorkers(1);
-                    o.SetMaxParallelism(30);
-                }));
+            builder.RegisterRebus(
+                config => config
+                    .Logging(l => l.Use(listLoggerFactory))
+                    .Transport(t => t.UseInMemoryTransport(network, queueName))
+                    .Options(o =>
+                    {
+                        o.SetNumberOfWorkers(1);
+                        o.SetMaxParallelism(30);
+                    })
+            );
 
             builder.RegisterHandler<MyMessageHandler>();
 
