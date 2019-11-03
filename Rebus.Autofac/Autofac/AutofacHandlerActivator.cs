@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.ExceptionServices;
-using System.Threading;
-using System.Threading.Tasks;
-using Autofac;
+﻿using Autofac;
 using Autofac.Core;
 using Autofac.Features.Variance;
 using Rebus.Activation;
@@ -18,16 +11,37 @@ using Rebus.Internals;
 using Rebus.Pipeline;
 using Rebus.Retry.Simple;
 using Rebus.Transport;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 #pragma warning disable 1998
 
 namespace Rebus.Autofac
 {
-    class AutofacHandlerActivator : IHandlerActivator
+    class AutofacHandlerActivator : IHandlerActivator, IStartable
     {
         const string LongExceptionMessage =
             "This particular container builder seems to have had the RegisterRebus(...) extension called on it more than once, which is unfortunately not allowed. In some cases, this is simply an indication that the configuration code for some reason has been executed more than once, which is probably not intended. If you intended to use one Autofac container to host multiple Rebus instances, please consider using a separate container instance for each Rebus endpoint that you wish to start.";
 
-        IContainer _container;
+        ILifetimeScope _container;
+        private readonly bool _startBus;
+
+        public void Start()
+        {
+            if (_startBus)
+            {
+                try
+                {
+                    _container.Resolve<IBus>();
+                }
+                catch (Exception exception)
+                {
+                    throw new RebusConfigurationException(exception, "Could not start Rebus");
+                }
+            }
+        }
 
         public AutofacHandlerActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer, IComponentContext> configureBus, bool startBus, bool enablePolymorphicDispatch)
         {
@@ -39,10 +53,23 @@ namespace Rebus.Autofac
                 containerBuilder.RegisterSource(new ContravariantRegistrationSource());
             }
 
+            //register autofac starter
+            containerBuilder.RegisterInstance(this).As<IStartable>().SingleInstance();
+            _startBus = startBus;
+
             // register IBus
             containerBuilder
                 .Register(context =>
                 {
+                    if (_container == null)
+                    {
+                        _container = context.Resolve<ILifetimeScope>();
+                    }
+                    if (HasMultipleBusRegistrations(_container.ComponentRegistry.Registrations))
+                    {
+                        throw new InvalidOperationException(LongExceptionMessage);
+                    }
+
                     var rebusConfigurer = Configure.With(this);
                     configureBus.Invoke(rebusConfigurer, context);
                     return rebusConfigurer.Start();
@@ -69,53 +96,6 @@ namespace Rebus.Autofac
                 .InstancePerDependency()
                 .ExternallyOwned();
 
-            // get the finished container and maybe start the bus
-            containerBuilder.RegisterBuildCallback(container =>
-            {
-                SetContainer(container);
-
-                if (HasMultipleBusRegistrations(container.ComponentRegistry.Registrations))
-                {
-                    throw new InvalidOperationException(LongExceptionMessage);
-                }
-
-                if (startBus)
-                {
-                    StartBus(container);
-                }
-            });
-        }
-
-        static void StartBus(IContainer c)
-        {
-            ExceptionDispatchInfo caughtException = null;
-
-            using (var done = new ManualResetEvent(false))
-            {
-                ThreadPool.QueueUserWorkItem(_ =>
-                {
-                    Thread.Sleep(100);
-                    try
-                    {
-                        c.Resolve<IBus>();
-                    }
-                    catch (Exception exception)
-                    {
-                        caughtException = ExceptionDispatchInfo.Capture(exception);
-                    }
-                    finally
-                    {
-                        done.Set();
-                    }
-                });
-
-                done.WaitOne();
-
-                if (caughtException != null)
-                {
-                    throw new RebusConfigurationException(caughtException.SourceException, "Could not start Rebus");
-                }
-            }
         }
 
         static bool HasMultipleBusRegistrations(IEnumerable<IComponentRegistration> registrations) =>
@@ -170,14 +150,5 @@ namespace Rebus.Autofac
         }
 
         readonly ConcurrentDictionary<Type, Func<ILifetimeScope, IEnumerable<IHandleMessages>>> _resolvers = new ConcurrentDictionary<Type, Func<ILifetimeScope, IEnumerable<IHandleMessages>>>();
-
-        void SetContainer(IContainer container)
-        {
-            if (_container != null)
-            {
-                throw new InvalidOperationException("One container instance can only have its SetContainer method called once");
-            }
-            _container = container ?? throw new ArgumentNullException(nameof(container), "Please pass a container instance when calling this method");
-        }
     }
 }
