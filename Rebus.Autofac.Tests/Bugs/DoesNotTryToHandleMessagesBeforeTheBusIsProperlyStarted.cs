@@ -54,6 +54,10 @@ namespace Rebus.Autofac.Tests.Bugs
                         o.SetMaxParallelism(30);
                     })
             );
+            // obtain bus instance for subscriptions...
+            builder.RegisterBuildCallback(c => {
+                var bus = c.Resolve<IBus>();
+            });
 
             builder.RegisterHandler<MyMessageHandler>();
 
