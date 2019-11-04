@@ -20,28 +20,13 @@ using System.Threading.Tasks;
 
 namespace Rebus.Autofac
 {
-    class AutofacHandlerActivator : IHandlerActivator, IStartable
+    class AutofacHandlerActivator : IHandlerActivator
     {
         const string LongExceptionMessage =
             "This particular container builder seems to have had the RegisterRebus(...) extension called on it more than once, which is unfortunately not allowed. In some cases, this is simply an indication that the configuration code for some reason has been executed more than once, which is probably not intended. If you intended to use one Autofac container to host multiple Rebus instances, please consider using a separate container instance for each Rebus endpoint that you wish to start.";
 
         ILifetimeScope _container;
         private readonly bool _startBus;
-
-        public void Start()
-        {
-            if (_startBus)
-            {
-                try
-                {
-                    _container.Resolve<IBus>();
-                }
-                catch (Exception exception)
-                {
-                    throw new RebusConfigurationException(exception, "Could not start Rebus");
-                }
-            }
-        }
 
         public AutofacHandlerActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer, IComponentContext> configureBus, bool startBus, bool enablePolymorphicDispatch)
         {
@@ -54,7 +39,31 @@ namespace Rebus.Autofac
             }
 
             //register autofac starter
-            containerBuilder.RegisterInstance(this).As<IStartable>().SingleInstance();
+            containerBuilder.RegisterInstance(this).As<AutofacHandlerActivator>()
+                .AutoActivate()
+                .SingleInstance()
+                .OnActivated((e)=> {
+                    if (e.Instance._container == null)
+                    {
+                        e.Instance._container = e.Context.Resolve<ILifetimeScope>();
+                    }
+                    if (HasMultipleBusRegistrations(e.Instance._container.ComponentRegistry.Registrations))
+                    {
+                        throw new InvalidOperationException(LongExceptionMessage);
+                    }
+
+                    if (e.Instance._startBus)
+                    {
+                        try
+                        {
+                            e.Context.Resolve<IBus>();
+                        }
+                        catch (Exception exception)
+                        {
+                            throw new RebusConfigurationException(exception, "Could not start Rebus");
+                        }
+                    }
+                });
             _startBus = startBus;
 
             // register IBus
@@ -64,10 +73,6 @@ namespace Rebus.Autofac
                     if (_container == null)
                     {
                         _container = context.Resolve<ILifetimeScope>();
-                    }
-                    if (HasMultipleBusRegistrations(_container.ComponentRegistry.Registrations))
-                    {
-                        throw new InvalidOperationException(LongExceptionMessage);
                     }
 
                     var rebusConfigurer = Configure.With(this);

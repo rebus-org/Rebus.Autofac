@@ -1,5 +1,6 @@
 ﻿using System;
 using Autofac;
+using Autofac.Core;
 using NUnit.Framework;
 using Rebus.Config;
 using Rebus.Logging;
@@ -40,7 +41,7 @@ namespace Rebus.Autofac.Tests
                 .Logging(l => l.Console(minLevel: LogLevel.Debug))
                 .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")));
 
-            Assert.Throws<InvalidOperationException>(() =>
+            Assert.Throws<DependencyResolutionException>(() =>
             {
                 builder.Build();
             });
