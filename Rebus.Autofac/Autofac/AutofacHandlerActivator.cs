@@ -27,8 +27,9 @@ namespace Rebus.Autofac
 
         ILifetimeScope _container;
         private readonly bool _startBus;
+        private readonly object _customLifetimeTags;
 
-        public AutofacHandlerActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer, IComponentContext> configureBus, bool startBus, bool enablePolymorphicDispatch)
+        public AutofacHandlerActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer, IComponentContext> configureBus, bool startBus, bool enablePolymorphicDispatch, object customLifetimeTags = null)
         {
             if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
             if (configureBus == null) throw new ArgumentNullException(nameof(configureBus));
@@ -65,6 +66,7 @@ namespace Rebus.Autofac
                     }
                 });
             _startBus = startBus;
+            _customLifetimeTags = customLifetimeTags;
 
             // register IBus
             containerBuilder
@@ -115,7 +117,9 @@ namespace Rebus.Autofac
         {
             ILifetimeScope CreateLifetimeScope()
             {
-                var scope = _container.BeginLifetimeScope();
+                var scope = (_customLifetimeTags != null) ?
+                    _container.BeginLifetimeScope(_customLifetimeTags) :
+                    _container.BeginLifetimeScope();
                 transactionContext.OnDisposed(() => scope.Dispose());
                 return scope;
             }

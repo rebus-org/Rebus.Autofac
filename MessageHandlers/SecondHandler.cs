@@ -9,6 +9,14 @@ namespace MessageHandlers
 
         public SecondHandler(EventAggregator eventAggregator) => _eventAggregator = eventAggregator;
 
-        public async Task Handle(string message) => _eventAggregator.Register($"SecondHandler handling {message}");
+        public Task Handle(string message)
+        {
+            _eventAggregator.Register($"SecondHandler handling {message}");
+#if NET45
+            return Task.FromResult(0);
+#else
+            return Task.CompletedTask;
+#endif
+        }
     }
 }

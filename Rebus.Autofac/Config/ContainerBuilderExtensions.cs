@@ -33,6 +33,20 @@ namespace Rebus.Config
         /// <summary>
         /// Makes the necessary registrations in the given <paramref name="containerBuilder"/>, invoking the
         /// <paramref name="configure"/> callback when Rebus needs to be configured.
+        /// <paramref name="customLifetimeTags"/> custom LifetimeTags for resolving handlers.
+        /// </summary>
+        public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, RebusConfigurer> configure, object customLifetimeTags)
+        {
+            if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
+            if (configure == null) throw new ArgumentNullException(nameof(configure));
+
+            new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer), startBus: true, enablePolymorphicDispatch: false, customLifetimeTags: customLifetimeTags);
+        }
+
+
+        /// <summary>
+        /// Makes the necessary registrations in the given <paramref name="containerBuilder"/>, invoking the
+        /// <paramref name="configure"/> callback when Rebus needs to be configured.
         /// </summary>
         public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, IComponentContext, RebusConfigurer> configure)
         {
@@ -40,6 +54,19 @@ namespace Rebus.Config
             if (configure == null) throw new ArgumentNullException(nameof(configure));
 
             new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer, context), startBus: true, enablePolymorphicDispatch: false);
+        }
+
+        /// <summary>
+        /// Makes the necessary registrations in the given <paramref name="containerBuilder"/>, invoking the
+        /// <paramref name="configure"/> callback when Rebus needs to be configured.
+        /// <paramref name="customLifetimeTags"/> custom LifetimeTags for resolving handlers.
+        /// </summary>
+        public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, IComponentContext, RebusConfigurer> configure, object customLifetimeTags)
+        {
+            if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
+            if (configure == null) throw new ArgumentNullException(nameof(configure));
+
+            new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer, context), startBus: true, enablePolymorphicDispatch: false, customLifetimeTags: customLifetimeTags);
         }
 
         /// <summary>
