@@ -5,7 +5,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Rebus.Autofac.Tests</RootNamespace>
     <AssemblyName>Rebus.Autofac.Tests</AssemblyName>
-    <TargetFrameworks>net45;net46;netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks>net462;netcoreapp2.1</TargetFrameworks>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Authors>mookid8000</Authors>
     <PackageLicenseUrl>https://raw.githubusercontent.com/rebus-org/Rebus/master/LICENSE.md</PackageLicenseUrl>
@@ -44,7 +44,7 @@
   <ItemGroup>
     <ProjectReference Include="..\MessageHandlers\MessageHandlers.csproj" />
     <ProjectReference Include="..\Rebus.Autofac\Rebus.Autofac.csproj" />
-    <PackageReference Include="Autofac" Version="4.5.0" />
+    <PackageReference Include="Autofac" Version="5.0.0" />
     <PackageReference Include="microsoft.net.test.sdk" Version="16.1.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
     <PackageReference Include="Rebus" Version="5.3.1" />
