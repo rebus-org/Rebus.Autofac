@@ -16,6 +16,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+// ReSharper disable ArgumentsStyleLiteral
 #pragma warning disable 1998
 
 namespace Rebus.Autofac
@@ -42,7 +43,8 @@ namespace Rebus.Autofac
             containerBuilder.RegisterInstance(this).As<AutofacHandlerActivator>()
                 .AutoActivate()
                 .SingleInstance()
-                .OnActivated((e)=> {
+                .OnActivated((e) =>
+                {
                     if (e.Instance._container == null)
                     {
                         e.Instance._container = e.Context.Resolve<ILifetimeScope>();
@@ -129,7 +131,7 @@ namespace Rebus.Autofac
                     if (messageType.IsAssignableTo(typeof(IFailed<>)))
                     {
                         var containedMessageType = messageType.GetGenericTypeParameters(typeof(IFailed<>)).Single();
-                        var additionalTypesToResolveHandlersFor = containedMessageType.GetBaseTypes();
+                        var additionalTypesToResolveHandlersFor = containedMessageType.GetBaseTypes(includeSelf: false);
                         var typesToResolve = new[] { containedMessageType }
                             .Concat(additionalTypesToResolveHandlersFor)
                             .Select(type => typeof(IEnumerable<>).MakeGenericType(typeof(IHandleMessages<>).MakeGenericType(typeof(IFailed<>).MakeGenericType(type))))
