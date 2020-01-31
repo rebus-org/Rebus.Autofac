@@ -118,7 +118,7 @@ namespace Rebus.Autofac
             ILifetimeScope CreateLifetimeScope()
             {
                 var scope = _container.BeginLifetimeScope();
-                transactionContext.OnDisposed(() => scope.Dispose());
+                transactionContext.OnDisposed(ctx => scope.Dispose());
                 return scope;
             }
 
