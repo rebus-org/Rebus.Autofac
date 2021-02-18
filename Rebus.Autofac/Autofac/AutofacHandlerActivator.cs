@@ -86,8 +86,7 @@ namespace Rebus.Autofac
             // regiser ISyncBus
             containerBuilder
                 .Register(c => c.Resolve<IBus>().Advanced.SyncBus)
-                .InstancePerDependency()
-                .ExternallyOwned();
+                .SingleInstance();
 
             // register IMessageContext
             containerBuilder
