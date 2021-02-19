@@ -22,24 +22,24 @@ namespace Rebus.Config
         /// Makes the necessary registrations in the given <paramref name="containerBuilder"/>, invoking the
         /// <paramref name="configure"/> callback when Rebus needs to be configured.
         /// </summary>
-        public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, RebusConfigurer> configure)
+        public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, RebusConfigurer> configure, bool startBus = true, bool enablePolymorphicDispatch = false)
         {
             if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
             if (configure == null) throw new ArgumentNullException(nameof(configure));
 
-            new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer), startBus: true, enablePolymorphicDispatch: false);
+            new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer), startBus, enablePolymorphicDispatch);
         }
 
         /// <summary>
         /// Makes the necessary registrations in the given <paramref name="containerBuilder"/>, invoking the
         /// <paramref name="configure"/> callback when Rebus needs to be configured.
         /// </summary>
-        public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, IComponentContext, RebusConfigurer> configure)
+        public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, IComponentContext, RebusConfigurer> configure, bool startBus = true, bool enablePolymorphicDispatch = false)
         {
             if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
             if (configure == null) throw new ArgumentNullException(nameof(configure));
 
-            new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer, context), startBus: true, enablePolymorphicDispatch: false);
+            new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer, context), startBus, enablePolymorphicDispatch);
         }
 
         /// <summary>
