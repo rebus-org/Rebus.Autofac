@@ -1,5 +1,4 @@
-﻿using System;
-using Autofac;
+﻿using Autofac;
 using Autofac.Core;
 using NUnit.Framework;
 using Rebus.Config;

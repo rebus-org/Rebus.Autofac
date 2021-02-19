@@ -5,7 +5,6 @@ using Rebus.Activation;
 using Rebus.Bus;
 using Rebus.Config;
 using Rebus.Exceptions;
-using Rebus.Extensions;
 using Rebus.Handlers;
 using Rebus.Internals;
 using Rebus.Pipeline;
