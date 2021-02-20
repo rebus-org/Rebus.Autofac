@@ -1,5 +1,4 @@
 ﻿using Autofac;
-using Autofac.Core;
 using NUnit.Framework;
 using Rebus.Config;
 using Rebus.Logging;
@@ -25,25 +24,6 @@ namespace Rebus.Autofac.Tests
             var container = builder.Build();
 
             Using(container);
-        }
-
-        [Test]
-        public void ThrowsWhenAddingTwice()
-        {
-            var builder = new ContainerBuilder();
-
-            builder.RegisterRebus(configure => configure
-                .Logging(l => l.Console(minLevel: LogLevel.Debug))
-                .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")));
-
-            builder.RegisterRebus(configure => configure
-                .Logging(l => l.Console(minLevel: LogLevel.Debug))
-                .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")));
-
-            Assert.Throws<DependencyResolutionException>(() =>
-            {
-                builder.Build();
-            });
         }
     }
 }

@@ -18,7 +18,7 @@ namespace Rebus.Autofac.Tests
         /*
          Initially:
 
-            
+
 Running 10 samples of 1000000 iterations
 Running sample # 1
 Running sample # 2
@@ -77,7 +77,7 @@ AVG: 4,394
 
             Refactor to local functions and collapsed typecast into one single cast:
 
-            
+
 Running 10 samples of 1000000 iterations
 Running sample # 1
 Running sample # 2

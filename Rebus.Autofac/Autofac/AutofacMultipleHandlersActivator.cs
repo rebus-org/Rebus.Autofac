@@ -15,15 +15,12 @@ using System.Threading.Tasks;
 
 namespace Rebus.Autofac
 {
-    class AutofacHandlerActivator : IHandlerActivator
+    class AutofacMultipleHandlersActivator<THandlerBase> : IHandlerActivator
+        where THandlerBase : class
     {
-        const string LongExceptionMessage =
-            "This particular container builder seems to have had the RegisterRebus(...) extension called on it more than once, which is unfortunately not allowed. In some cases, this is simply an indication that the configuration code for some reason has been executed more than once, which is probably not intended. If you intended to use one Autofac container to host multiple Rebus instances, please consider use the one way bus starter and put your handlers into the multiple handler activator class instead.";
-
         ILifetimeScope _container;
-        private readonly bool _startBus;
 
-        public AutofacHandlerActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer, IComponentContext> configureBus, bool startBus, bool enablePolymorphicDispatch)
+        public AutofacMultipleHandlersActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer, IComponentContext> configureBus, bool enablePolymorphicDispatch)
         {
             if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
             if (configureBus == null) throw new ArgumentNullException(nameof(configureBus));
@@ -34,46 +31,23 @@ namespace Rebus.Autofac
             }
 
             // Register autofac starter
-            containerBuilder.RegisterInstance(this).As<AutofacHandlerActivator>()
+            containerBuilder.RegisterInstance(this).As<AutofacMultipleHandlersActivator<THandlerBase>>()
                 .AutoActivate()
                 .SingleInstance()
                 .OnActivated(e =>
                 {
-                    // Make sure we have not been registered multiple times
+                    // Save the container for creating new lifetime scopes
                     e.Instance._container = e.Context.Resolve<ILifetimeScope>();
-                    if (AutofacHelpers.HasMultipleBusRegistrations(e.Instance._container.ComponentRegistry.Registrations))
-                    {
-                        throw new InvalidOperationException(LongExceptionMessage);
-                    }
-
-                    // Start the bus up if requested
-                    if (e.Instance._startBus)
-                    {
-                        try
-                        {
-                            e.Context.Resolve<IBus>();
-                        }
-                        catch (Exception exception)
-                        {
-                            throw new RebusConfigurationException(exception, "Could not start Rebus");
-                        }
-                    }
                 });
-            _startBus = startBus;
 
-            // Register IBus. When this is resolved, the bus starts up.
+            // Register IBusStarter so the message handlers can be started up
             containerBuilder
                 .Register(context =>
                 {
                     var rebusConfigurer = Configure.With(this);
                     configureBus.Invoke(rebusConfigurer, context);
-                    return rebusConfigurer.Start();
+                    return new BusStarter<THandlerBase>(rebusConfigurer.Create()) as IBusStarter<THandlerBase>;
                 })
-                .SingleInstance();
-
-            // Register ISyncBus
-            containerBuilder
-                .Register(c => c.Resolve<IBus>().Advanced.SyncBus)
                 .SingleInstance();
 
             // Register IMessageContext
@@ -96,7 +70,7 @@ namespace Rebus.Autofac
         /// </summary>
         public async Task<IEnumerable<IHandleMessages<TMessage>>> GetHandlers<TMessage>(TMessage message, ITransactionContext transactionContext)
         {
-            return AutofacHelpers.ResolveAutofacHandlers<TMessage>(transactionContext, _container, _resolvers, null);
+            return AutofacHelpers.ResolveAutofacHandlers<TMessage>(transactionContext, _container, _resolvers, typeof(THandlerBase));
         }
 
         readonly ConcurrentDictionary<Type, Func<ILifetimeScope, IEnumerable<IHandleMessages>>> _resolvers = new ConcurrentDictionary<Type, Func<ILifetimeScope, IEnumerable<IHandleMessages>>>();
