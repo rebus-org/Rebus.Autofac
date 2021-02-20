@@ -9,7 +9,7 @@ namespace Rebus.Autofac
     public class BusStarter<THandlerBase> : IBusStarter<THandlerBase>
         where THandlerBase : class
     {
-        private readonly IBusStarter _busStarter;
+        private IBusStarter _busStarter;
 
         /// <summary>
         /// Constructor for the bus stater wrapper class
@@ -27,6 +27,17 @@ namespace Rebus.Autofac
         public void Start()
         {
             _busStarter.Start();
+        }
+
+        /// <summary>
+        /// Called when the context containing this bus handler is disposed, so dispose of our containing
+        /// bus which will shut down all it's workers.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_busStarter == null) return;
+            _busStarter.Bus.Dispose();
+            _busStarter = null;
         }
     }
 }

@@ -9,6 +9,7 @@ using Rebus.Handlers;
 using Rebus.Internals;
 using Rebus.Retry.Simple;
 using Rebus.Transport;
+// ReSharper disable ArgumentsStyleLiteral
 #pragma warning disable 1998
 
 namespace Rebus.Autofac

@@ -61,7 +61,8 @@ namespace Rebus.Autofac
                 });
             _startBus = startBus;
 
-            // Register IBus. When this is resolved, the bus starts up.
+            // Register IBus. When this is resolved, the bus starts up. This is also disposable, so when the IBus is disposed,
+            // it will shut down all it's handlers.
             containerBuilder
                 .Register(context =>
                 {

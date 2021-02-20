@@ -1,9 +1,7 @@
 ﻿using Autofac;
 using Autofac.Features.Variance;
 using Rebus.Activation;
-using Rebus.Bus;
 using Rebus.Config;
-using Rebus.Exceptions;
 using Rebus.Handlers;
 using Rebus.Pipeline;
 using Rebus.Transport;
@@ -40,7 +38,8 @@ namespace Rebus.Autofac
                     e.Instance._container = e.Context.Resolve<ILifetimeScope>();
                 });
 
-            // Register IBusStarter so the message handlers can be started up
+            // Register IBusStarter so the message handlers can be started up. This is also disposable, so when the IBus is disposed,
+            // it will shut down all it's handlers.
             containerBuilder
                 .Register(context =>
                 {
