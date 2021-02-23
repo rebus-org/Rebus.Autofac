@@ -43,6 +43,9 @@
 ## 7.0.0
 * Update to Rebus 6
 
+## 7.1.0
+* Remove CLS compliance attribute accidentally left over from the past
+
 [leomenca]: https://github.com/leomenca
 [oliverhanappi]: https://github.com/oliverhanappi
 [robvanpamel]: https://github.com/robvanpamel
