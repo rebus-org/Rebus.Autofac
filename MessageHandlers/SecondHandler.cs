@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Rebus.Handlers;
+#pragma warning disable 1998
 
 namespace MessageHandlers
 {

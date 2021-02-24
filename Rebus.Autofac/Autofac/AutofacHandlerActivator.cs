@@ -5,7 +5,6 @@ using Rebus.Activation;
 using Rebus.Bus;
 using Rebus.Config;
 using Rebus.Exceptions;
-using Rebus.Extensions;
 using Rebus.Handlers;
 using Rebus.Internals;
 using Rebus.Pipeline;
@@ -16,7 +15,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-// ReSharper disable ArgumentsStyleLiteral
 #pragma warning disable 1998
 
 namespace Rebus.Autofac
@@ -39,11 +37,11 @@ namespace Rebus.Autofac
                 containerBuilder.RegisterSource(new ContravariantRegistrationSource());
             }
 
-            //register autofac starter
+            // Register autofac starter
             containerBuilder.RegisterInstance(this).As<AutofacHandlerActivator>()
                 .AutoActivate()
                 .SingleInstance()
-                .OnActivated((e) =>
+                .OnActivated(e =>
                 {
                     if (e.Instance._container == null)
                     {
@@ -54,6 +52,7 @@ namespace Rebus.Autofac
                         throw new InvalidOperationException(LongExceptionMessage);
                     }
 
+                    // Start the bus up if requested
                     if (e.Instance._startBus)
                     {
                         try
@@ -68,7 +67,7 @@ namespace Rebus.Autofac
                 });
             _startBus = startBus;
 
-            // register IBus
+            // Register IBus
             containerBuilder
                 .Register(context =>
                 {
@@ -83,13 +82,13 @@ namespace Rebus.Autofac
                 })
                 .SingleInstance();
 
-            // regiser ISyncBus
+            // Register ISyncBus, resolved from IBus
             containerBuilder
                 .Register(c => c.Resolve<IBus>().Advanced.SyncBus)
                 .InstancePerDependency()
                 .ExternallyOwned();
 
-            // register IMessageContext
+            // Register IMessageContext
             containerBuilder
                 .Register(c =>
                 {
@@ -122,8 +121,7 @@ namespace Rebus.Autofac
                 return scope;
             }
 
-            var lifetimeScope = transactionContext
-                .GetOrAdd("current-autofac-lifetime-scope", CreateLifetimeScope);
+            var lifetimeScope = transactionContext.GetOrAdd("current-autofac-lifetime-scope", CreateLifetimeScope);
 
             var resolver = _resolvers.GetOrAdd(typeof(TMessage),
                 messageType =>
