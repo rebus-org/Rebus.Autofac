@@ -13,6 +13,7 @@ using Rebus.Retry.Simple;
 using Rebus.Tests.Contracts;
 using Rebus.Transport;
 using Rebus.Transport.InMem;
+#pragma warning disable 1998
 
 namespace Rebus.Autofac.Tests.Bugs
 {
@@ -154,7 +155,7 @@ namespace Rebus.Autofac.Tests.Bugs
             public Dictionary<string, string> Headers { get; set; }
             public IEnumerable<Exception> Exceptions { get; set; }
         }
-        
+
         public class FailedMessage<T> : IFailed<T>
         {
             public FailedMessage(T message, string errorDescription, Dictionary<string, string> headers, IEnumerable<Exception> exceptions)

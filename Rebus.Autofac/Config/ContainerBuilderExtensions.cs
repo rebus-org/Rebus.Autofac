@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Autofac;
 using Rebus.Autofac;
 using Rebus.Handlers;
-using Rebus.Internals;
 // ReSharper disable ArgumentsStyleNamedExpression
 // ReSharper disable ArgumentsStyleLiteral
 // ReSharper disable ObjectCreationAsStatement
@@ -20,46 +18,86 @@ namespace Rebus.Config
     {
         /// <summary>
         /// Makes the necessary registrations in the given <paramref name="containerBuilder"/>, invoking the
-        /// <paramref name="configure"/> callback when Rebus needs to be configured.
+        /// <paramref name="configure"/> callback when Rebus needs to be configured. You can only have a single
+        /// bus and set of handlers registered within an Autofac IoC container. If you wish to have multiple handlers, you will need
+        /// to split up the bus into a one way bus, and multiple handler registrations.
         /// </summary>
-        public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, RebusConfigurer> configure)
+        public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, RebusConfigurer> configure, bool startBus = true, bool enablePolymorphicDispatch = false)
         {
             if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
             if (configure == null) throw new ArgumentNullException(nameof(configure));
 
-            new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer), startBus: true, enablePolymorphicDispatch: false);
+            new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer), startBus, enablePolymorphicDispatch);
         }
 
         /// <summary>
         /// Makes the necessary registrations in the given <paramref name="containerBuilder"/>, invoking the
-        /// <paramref name="configure"/> callback when Rebus needs to be configured.
+        /// <paramref name="configure"/> callback when Rebus needs to be configured. You can only have a single
+        /// bus and set of handlers registered within an Autofac IoC container. If you wish to have multiple handlers, you will need
+        /// to split up the bus into a one way bus, and multiple handler registrations.
         /// </summary>
-        public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, IComponentContext, RebusConfigurer> configure)
+        public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, IComponentContext, RebusConfigurer> configure, bool startBus = true, bool enablePolymorphicDispatch = false)
         {
             if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
             if (configure == null) throw new ArgumentNullException(nameof(configure));
 
-            new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer, context), startBus: true, enablePolymorphicDispatch: false);
+            new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer, context), startBus, enablePolymorphicDispatch);
         }
 
         /// <summary>
         /// Registers all Rebus message handler types found in the assembly of <typeparamref name="T"/>
         /// </summary>
-        public static void RegisterHandlersFromAssemblyOf<T>(this ContainerBuilder builder)
+        public static void RegisterHandlersFromAssemblyOf<T>(this ContainerBuilder builder, PropertyWiringOptions propertyWiringOptions = PropertyWiringOptions.None)
+        {
+            RegisterHandlersFromAssemblyOf(builder, typeof(T), propertyWiringOptions);
+        }
+
+        /// <summary>
+        /// Registers all Rebus message handler types found in the assembly of <paramref name="handlerType"/>
+        /// </summary>
+        public static void RegisterHandlersFromAssemblyOf(this ContainerBuilder builder, Type handlerType, PropertyWiringOptions propertyWiringOptions = PropertyWiringOptions.None)
         {
             if (builder == null) throw new ArgumentNullException(nameof(builder));
+            if (handlerType == null) throw new ArgumentNullException(nameof(handlerType));
 
-            builder.RegisterAssemblyTypes(typeof(T).Assembly)
+            builder.RegisterAssemblyTypes(handlerType.Assembly)
                 .Where(t => t.IsClass && !t.IsAbstract && t.GetInterfaces().Any(IsRebusHandler))
                 .As(GetImplementedHandlerInterfaces)
                 .InstancePerDependency()
-                .PropertiesAutowired();
+                .PropertiesAutowired(propertyWiringOptions);
+        }
+
+        /// <summary>
+        /// Registers all Rebus message handler types found in the assembly of <typeparamref name="T"/> under the namespace that type lives
+        /// under. So all types within the same namespace will get mapped as handlers, but not types under other namespaces. This allows
+        /// you to separate messages for specific queues by namespace and register them all in one go.
+        /// </summary>
+        public static void RegisterHandlersFromAssemblyNamespaceOf<T>(this ContainerBuilder builder, PropertyWiringOptions propertyWiringOptions = PropertyWiringOptions.None)
+        {
+            RegisterHandlersFromAssemblyNamespaceOf(builder, typeof(T), propertyWiringOptions);
+        }
+
+        /// <summary>
+        /// Registers all Rebus message handler types found in the assembly of <paramref name="handlerType"/> under the namespace that type lives
+        /// under. So all types within the same namespace will get mapped as handlers, but not types under other namespaces. This allows
+        /// you to separate messages for specific queues by namespace and register them all in one go.
+        /// </summary>
+        public static void RegisterHandlersFromAssemblyNamespaceOf(this ContainerBuilder builder, Type handlerType, PropertyWiringOptions propertyWiringOptions = PropertyWiringOptions.None)
+        {
+            if (builder == null) throw new ArgumentNullException(nameof(builder));
+            if (handlerType == null) throw new ArgumentNullException(nameof(handlerType));
+
+            builder.RegisterAssemblyTypes(handlerType.Assembly)
+                .Where(t => t.IsClass && !t.IsAbstract && t.GetInterfaces().Any(IsRebusHandler) && t.Namespace != null && t.Namespace.StartsWith(handlerType.Namespace ?? string.Empty))
+                .As(GetImplementedHandlerInterfaces)
+                .InstancePerDependency()
+                .PropertiesAutowired(propertyWiringOptions);
         }
 
         /// <summary>
         /// Registers the given type as a Rebus message handler
         /// </summary>
-        public static void RegisterHandler<THandler>(this ContainerBuilder builder) where THandler : IHandleMessages
+        public static void RegisterHandler<THandler>(this ContainerBuilder builder, PropertyWiringOptions propertyWiringOptions = PropertyWiringOptions.None) where THandler : IHandleMessages
         {
             if (builder == null) throw new ArgumentNullException(nameof(builder));
 
@@ -67,7 +105,7 @@ namespace Rebus.Config
 
             builder.RegisterType(typeof(THandler)).As(implementedHandlerTypes)
                 .InstancePerDependency()
-                .PropertiesAutowired();
+                .PropertiesAutowired(propertyWiringOptions);
         }
 
         static IEnumerable<Type> GetImplementedHandlerInterfaces(Type handlerType) => handlerType.GetInterfaces().Where(IsRebusHandler);

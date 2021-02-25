@@ -13,6 +13,7 @@ using Rebus.Retry.Simple;
 using Rebus.Tests.Contracts;
 using Rebus.Transport;
 using Rebus.Transport.InMem;
+#pragma warning disable 1998
 
 namespace Rebus.Autofac.Tests.Bugs
 {
