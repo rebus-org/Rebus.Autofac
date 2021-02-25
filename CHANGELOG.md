@@ -46,6 +46,10 @@
 ## 7.1.0
 * Remove CLS compliance attribute accidentally left over from the past
 
+## 7.2.0
+* Additional registration overloads - thanks [kendallb]
+
+[kendallb]: https://github.com/kendallb
 [leomenca]: https://github.com/leomenca
 [oliverhanappi]: https://github.com/oliverhanappi
 [robvanpamel]: https://github.com/robvanpamel
