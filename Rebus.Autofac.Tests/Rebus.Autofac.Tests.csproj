@@ -43,6 +43,7 @@
     <WarningsAsErrors />
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\AdditionalHandlerAssembly\AdditionalHandlerAssembly.csproj" />
     <ProjectReference Include="..\MessageHandlers\MessageHandlers.csproj" />
     <ProjectReference Include="..\Rebus.Autofac\Rebus.Autofac.csproj" />
     <PackageReference Include="Autofac" Version="5.0.0" />
