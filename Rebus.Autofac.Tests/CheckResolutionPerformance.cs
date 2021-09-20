@@ -120,7 +120,7 @@ AVG: 4,026
             builder.RegisterHandler<PolymorphicMessageHandler>();
             builder.RegisterHandler<PolymorphicMessageHandler2>();
 
-            var activator = new AutofacHandlerActivator(builder, (configurer, context) => { }, startBus: false, enablePolymorphicDispatch: true);
+            var activator = new AutofacHandlerActivator(builder, (configurer, context) => { }, startBus: false, enablePolymorphicDispatch: true, multipleRegistrationsCheckEnabled: true);
             var timeSpans = new List<TimeSpan>();
 
             using (var container = builder.Build())

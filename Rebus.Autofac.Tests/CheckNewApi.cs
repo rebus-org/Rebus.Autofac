@@ -41,10 +41,25 @@ namespace Rebus.Autofac.Tests
                 .Logging(l => l.Console(minLevel: LogLevel.Debug))
                 .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")));
 
-            Assert.Throws<DependencyResolutionException>(() =>
-            {
-                builder.Build();
-            });
+            Assert.Throws<InvalidOperationException>(() => builder.Build());
+        }
+
+        [Test]
+        public void DoesNotThrowWhenRegisteringTwiceIfExplicitlyDisabled()
+        {
+            var builder = new ContainerBuilder();
+
+            builder.RegisterRebus(configure => configure
+                .Logging(l => l.Console(minLevel: LogLevel.Debug))
+                .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")),
+                disableMultipleRegistrationsCheck: true);
+
+            builder.RegisterRebus(configure => configure
+                .Logging(l => l.Console(minLevel: LogLevel.Debug))
+                .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")),
+                disableMultipleRegistrationsCheck: true);
+
+            Assert.DoesNotThrow(() => builder.Build());
         }
     }
 }

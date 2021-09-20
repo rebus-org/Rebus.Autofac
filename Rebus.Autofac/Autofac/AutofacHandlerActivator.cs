@@ -15,6 +15,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+// ReSharper disable SimplifyLinqExpressionUseAll
 #pragma warning disable 1998
 
 namespace Rebus.Autofac
@@ -25,9 +26,8 @@ namespace Rebus.Autofac
             "This particular container builder seems to have had the RegisterRebus(...) extension called on it more than once, which is unfortunately not allowed. In some cases, this is simply an indication that the configuration code for some reason has been executed more than once, which is probably not intended. If you intended to use one Autofac container to host multiple Rebus instances, please consider using a separate container instance for each Rebus endpoint that you wish to start.";
 
         ILifetimeScope _container;
-        private readonly bool _startBus;
 
-        public AutofacHandlerActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer, IComponentContext> configureBus, bool startBus, bool enablePolymorphicDispatch)
+        public AutofacHandlerActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer, IComponentContext> configureBus, bool startBus, bool enablePolymorphicDispatch, bool multipleRegistrationsCheckEnabled)
         {
             if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
             if (configureBus == null) throw new ArgumentNullException(nameof(configureBus));
@@ -35,6 +35,27 @@ namespace Rebus.Autofac
             if (enablePolymorphicDispatch)
             {
                 containerBuilder.RegisterSource(new ContravariantRegistrationSource());
+            }
+
+            if (multipleRegistrationsCheckEnabled)
+            {
+                var autofacHandlerActivatorWasRegistered = false;
+
+                // guard against additional calls to RegisterRebus by detecting number of calls here
+                containerBuilder.ComponentRegistryBuilder.Registered += (o, ea) =>
+                {
+                    var registration = ea.ComponentRegistration;
+                    var typedServices = registration.Services.OfType<TypedService>();
+
+                    if (!typedServices.Any(t => t.ServiceType == typeof(AutofacHandlerActivator))) return;
+
+                    if (autofacHandlerActivatorWasRegistered)
+                    {
+                        throw new InvalidOperationException(LongExceptionMessage);
+                    }
+
+                    autofacHandlerActivatorWasRegistered = true;
+                };
             }
 
             // Register autofac starter
@@ -47,25 +68,19 @@ namespace Rebus.Autofac
                     {
                         e.Instance._container = e.Context.Resolve<ILifetimeScope>();
                     }
-                    if (HasMultipleBusRegistrations(e.Instance._container.ComponentRegistry.Registrations))
-                    {
-                        throw new InvalidOperationException(LongExceptionMessage);
-                    }
 
+                    if (!startBus) return;
+                    
                     // Start the bus up if requested
-                    if (e.Instance._startBus)
+                    try
                     {
-                        try
-                        {
-                            e.Context.Resolve<IBus>();
-                        }
-                        catch (Exception exception)
-                        {
-                            throw new RebusConfigurationException(exception, "Could not start Rebus");
-                        }
+                        e.Context.Resolve<IBus>();
+                    }
+                    catch (Exception exception)
+                    {
+                        throw new RebusConfigurationException(exception, "Could not start Rebus");
                     }
                 });
-            _startBus = startBus;
 
             // Register IBus
             containerBuilder
@@ -101,13 +116,7 @@ namespace Rebus.Autofac
                 })
                 .InstancePerDependency()
                 .ExternallyOwned();
-
         }
-
-        static bool HasMultipleBusRegistrations(IEnumerable<IComponentRegistration> registrations) =>
-            registrations.SelectMany(r => r.Services)
-                .OfType<TypedService>()
-                .Count(s => s.ServiceType == typeof(IBus)) > 1;
 
         /// <summary>
         /// Resolves all handlers for the given <typeparamref name="TMessage"/> message type

@@ -49,6 +49,9 @@
 ## 7.2.0
 * Additional registration overloads - thanks [kendallb]
 
+## 7.3.0
+* Move multiple registrations check to the builder's registration callback, because it doesn't interfere with the container's `IBus` registration. This way, `IBus` can be overridden/decorated if desired. The check can also be disabled alltogether by passing `disableMultipleRegistrationsCheck: true` to the `RegisterRebus` method.
+
 [kendallb]: https://github.com/kendallb
 [leomenca]: https://github.com/leomenca
 [oliverhanappi]: https://github.com/oliverhanappi

@@ -18,7 +18,7 @@ namespace Rebus.Autofac.Tests
             var builder = new ContainerBuilder();
             configureHandlers(new HandlerRegistry(builder));
 
-            var containerAdapter = new AutofacHandlerActivator(builder, (conf, con) => { }, startBus: false, enablePolymorphicDispatch: true);
+            var containerAdapter = new AutofacHandlerActivator(builder, (conf, con) => { }, startBus: false, enablePolymorphicDispatch: true, multipleRegistrationsCheckEnabled: true);
 
             var autofacContainer = builder.Build();
             container = new ActivatedContainer(autofacContainer);
@@ -31,7 +31,7 @@ namespace Rebus.Autofac.Tests
             var containerBuilder = new ContainerBuilder();
             configureHandlers(new HandlerRegistry(containerBuilder));
 
-            new AutofacHandlerActivator(containerBuilder, (conf, con) => configureBus(conf), startBus: true, enablePolymorphicDispatch: true);
+            new AutofacHandlerActivator(containerBuilder, (conf, con) => configureBus(conf), startBus: true, enablePolymorphicDispatch: true, multipleRegistrationsCheckEnabled: true);
 
             var autofacContainer = containerBuilder.Build();
             container = new ActivatedContainer(autofacContainer);

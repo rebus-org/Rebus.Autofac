@@ -86,7 +86,7 @@ namespace Rebus.Autofac.Tests.Bugs
             var builder = new ContainerBuilder();
             builder.RegisterHandler<TestHandler>();
 
-            var activator = new AutofacHandlerActivator(builder, (_, __) => { }, startBus: false, enablePolymorphicDispatch: true);
+            var activator = new AutofacHandlerActivator(builder, (_, __) => { }, startBus: false, enablePolymorphicDispatch: true, multipleRegistrationsCheckEnabled: true);
             using (var container = builder.Build())
             using (var scope = new RebusTransactionScope())
             {
