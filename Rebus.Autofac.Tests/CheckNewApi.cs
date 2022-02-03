@@ -4,6 +4,7 @@ using NUnit.Framework;
 using Rebus.Config;
 using Rebus.Logging;
 using Rebus.Tests.Contracts;
+using Rebus.Tests.Contracts.Utilities;
 using Rebus.Transport.InMem;
 // ReSharper disable RedundantArgumentDefaultValue
 // ReSharper disable ArgumentsStyleNamedExpression
@@ -21,6 +22,24 @@ public class CheckNewApi : FixtureBase
         builder.RegisterRebus(
             configure => configure
                 .Logging(l => l.Console(minLevel: LogLevel.Debug))
+                .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test"))
+        );
+
+        var container = builder.Build();
+
+        Using(container);
+    }
+
+    [Test]
+    public void ThisIsHowItWorks_ComponentContext()
+    {
+        var builder = new ContainerBuilder();
+
+        builder.Register(_ => new ListLoggerFactory(outputToConsole: true));
+
+        builder.RegisterRebus(
+            (configure, context) => configure
+                .Logging(l => l.Use(context.Resolve<ListLoggerFactory>()))
                 .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test"))
         );
 
