@@ -12,70 +12,69 @@ using Rebus.Tests.Contracts;
 using Rebus.Tests.Contracts.Extensions;
 using Rebus.Transport.InMem;
 
-namespace Rebus.Autofac.Tests.Bugs
+namespace Rebus.Autofac.Tests.Bugs;
+
+[TestFixture]
+public class ReproduceDoubleDispatchIssue : FixtureBase
 {
-    [TestFixture]
-    public class ReproduceDoubleDispatchIssue : FixtureBase
+    [Test]
+    [Description("Tried to reproduce issue reported: Messages should apparently be dispatched twice. Sp far, reproduction has not been not successful.")]
+    public async Task ItWorks()
     {
-        [Test]
-        [Description("Tried to reproduce issue reported: Messages should apparently be dispatched twice. Sp far, reproduction has not been not successful.")]
-        public async Task ItWorks()
+        var controllerChangeMessages = new ConcurrentQueue<ControllerChangeMessage>();
+
+        var builder = new ContainerBuilder();
+
+        builder.RegisterRebus((configurer, _) =>
         {
-            var controllerChangeMessages = new ConcurrentQueue<ControllerChangeMessage>();
+            var queueName = "queue";
 
-            var builder = new ContainerBuilder();
+            configurer
+                .Logging(l => l.ColoredConsole())
+                .Transport(x => x.UseInMemoryTransport(new InMemNetwork(true), queueName))
+                .Subscriptions(s => s.StoreInMemory(new InMemorySubscriberStore()))
+                .Options(x =>
+                {
+                    x.SetMaxParallelism(1);
+                    x.SimpleRetryStrategy(maxDeliveryAttempts: int.MaxValue);
+                });
 
-            builder.RegisterRebus((configurer, _) =>
-            {
-                var queueName = "queue";
+            return configurer;
+        });
 
-                configurer
-                    .Logging(l => l.ColoredConsole())
-                    .Transport(x => x.UseInMemoryTransport(new InMemNetwork(true), queueName))
-                    .Subscriptions(s => s.StoreInMemory(new InMemorySubscriberStore()))
-                    .Options(x =>
-                    {
-                        x.SetMaxParallelism(1);
-                        x.SimpleRetryStrategy(maxDeliveryAttempts: int.MaxValue);
-                    });
+        builder.RegisterHandlersFromAssemblyOf<ControllerChangeMessageHandler>();
 
-                return configurer;
-            });
+        builder.RegisterInstance(controllerChangeMessages).AsSelf();
 
-            builder.RegisterHandlersFromAssemblyOf<ControllerChangeMessageHandler>();
+        //builder.RegisterBuildCallback(c =>
+        //{
+        //    var bus = c.Resolve<IBus>();
+        //    var messageTypes = AssemblyHelpers.GetImplementations(typeof(IHandleMessages))
+        //        .SelectMany(x => x.GetInterfaces())
+        //        .Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IHandleMessages<>))
+        //        .SelectMany(x => x.GetGenericArguments())
+        //        .Where(x => typeof(RebusMessage).IsAssignableFrom(x))
+        //        .ToList();
 
-            builder.RegisterInstance(controllerChangeMessages).AsSelf();
+        //    foreach (var messageType in messageTypes)
+        //    {
+        //        bus.Subscribe(messageType).GetAwaiter().GetResult();
+        //    }
+        //});
 
-            //builder.RegisterBuildCallback(c =>
-            //{
-            //    var bus = c.Resolve<IBus>();
-            //    var messageTypes = AssemblyHelpers.GetImplementations(typeof(IHandleMessages))
-            //        .SelectMany(x => x.GetInterfaces())
-            //        .Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IHandleMessages<>))
-            //        .SelectMany(x => x.GetGenericArguments())
-            //        .Where(x => typeof(RebusMessage).IsAssignableFrom(x))
-            //        .ToList();
+        await using var container = builder.Build();
 
-            //    foreach (var messageType in messageTypes)
-            //    {
-            //        bus.Subscribe(messageType).GetAwaiter().GetResult();
-            //    }
-            //});
+        var bus = container.Resolve<IBus>();
 
-            await using var container = builder.Build();
+        await bus.SendLocal(new ControllerChangeMessage());
 
-            var bus = container.Resolve<IBus>();
+        // wait for at least one message to arrive
+        await controllerChangeMessages.WaitUntil(q => q.Count >= 1);
 
-            await bus.SendLocal(new ControllerChangeMessage());
+        // wait additional time to be sure all messages have been processed
+        await Task.Delay(TimeSpan.FromSeconds(2));
 
-            // wait for at least one message to arrive
-            await controllerChangeMessages.WaitUntil(q => q.Count >= 1);
-
-            // wait additional time to be sure all messages have been processed
-            await Task.Delay(TimeSpan.FromSeconds(2));
-
-            // even at this point, the handler should only have been called once!
-            Assert.That(controllerChangeMessages.Count, Is.EqualTo(1));
-        }
+        // even at this point, the handler should only have been called once!
+        Assert.That(controllerChangeMessages.Count, Is.EqualTo(1));
     }
 }

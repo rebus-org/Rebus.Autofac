@@ -18,151 +18,143 @@ using System.Threading.Tasks;
 // ReSharper disable SimplifyLinqExpressionUseAll
 #pragma warning disable 1998
 
-namespace Rebus.Autofac
+namespace Rebus.Autofac;
+
+class AutofacHandlerActivator : IHandlerActivator
 {
-    class AutofacHandlerActivator : IHandlerActivator
+    const string LongExceptionMessage =
+        "This particular container builder seems to have had the RegisterRebus(...) extension called on it more than once, which is unfortunately not allowed. In some cases, this is simply an indication that the configuration code for some reason has been executed more than once, which is probably not intended. If you intended to use one Autofac container to host multiple Rebus instances, please consider using a separate container instance for each Rebus endpoint that you wish to start.";
+
+    readonly ConcurrentDictionary<Type, Func<ILifetimeScope, IEnumerable<IHandleMessages>>> _resolvers = new();
+
+    ILifetimeScope _container;
+
+    public AutofacHandlerActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer, IComponentContext> configureBus, bool startBus, bool enablePolymorphicDispatch, bool multipleRegistrationsCheckEnabled)
     {
-        const string LongExceptionMessage =
-            "This particular container builder seems to have had the RegisterRebus(...) extension called on it more than once, which is unfortunately not allowed. In some cases, this is simply an indication that the configuration code for some reason has been executed more than once, which is probably not intended. If you intended to use one Autofac container to host multiple Rebus instances, please consider using a separate container instance for each Rebus endpoint that you wish to start.";
+        if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
+        if (configureBus == null) throw new ArgumentNullException(nameof(configureBus));
 
-        ILifetimeScope _container;
-
-        public AutofacHandlerActivator(ContainerBuilder containerBuilder, Action<RebusConfigurer, IComponentContext> configureBus, bool startBus, bool enablePolymorphicDispatch, bool multipleRegistrationsCheckEnabled)
+        if (enablePolymorphicDispatch)
         {
-            if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
-            if (configureBus == null) throw new ArgumentNullException(nameof(configureBus));
+            containerBuilder.RegisterSource(new ContravariantRegistrationSource());
+        }
 
-            if (enablePolymorphicDispatch)
+        if (multipleRegistrationsCheckEnabled)
+        {
+            var autofacHandlerActivatorWasRegistered = false;
+
+            // guard against additional calls to RegisterRebus by detecting number of calls here
+            containerBuilder.ComponentRegistryBuilder.Registered += (_, ea) =>
             {
-                containerBuilder.RegisterSource(new ContravariantRegistrationSource());
-            }
+                var registration = ea.ComponentRegistration;
+                var typedServices = registration.Services.OfType<TypedService>();
 
-            if (multipleRegistrationsCheckEnabled)
-            {
-                var autofacHandlerActivatorWasRegistered = false;
+                if (!typedServices.Any(t => t.ServiceType == typeof(AutofacHandlerActivator))) return;
 
-                // guard against additional calls to RegisterRebus by detecting number of calls here
-                containerBuilder.ComponentRegistryBuilder.Registered += (o, ea) =>
+                if (autofacHandlerActivatorWasRegistered)
                 {
-                    var registration = ea.ComponentRegistration;
-                    var typedServices = registration.Services.OfType<TypedService>();
+                    throw new InvalidOperationException(LongExceptionMessage);
+                }
 
-                    if (!typedServices.Any(t => t.ServiceType == typeof(AutofacHandlerActivator))) return;
+                autofacHandlerActivatorWasRegistered = true;
+            };
+        }
 
-                    if (autofacHandlerActivatorWasRegistered)
+        // Register autofac starter
+        containerBuilder.RegisterInstance(this).As<AutofacHandlerActivator>()
+            .AutoActivate()
+            .SingleInstance()
+            .OnActivated(e =>
+            {
+                e.Instance._container ??= e.Context.Resolve<ILifetimeScope>();
+
+                if (!startBus) return;
+
+                // Start the bus up if requested
+                try
+                {
+                    e.Context.Resolve<IBus>();
+                }
+                catch (Exception exception)
+                {
+                    throw new RebusConfigurationException(exception, "Could not start Rebus");
+                }
+            });
+
+        // Register IBus
+        containerBuilder
+            .Register(context =>
+            {
+                _container ??= context.Resolve<ILifetimeScope>();
+
+                var rebusConfigurer = Configure.With(this);
+                configureBus.Invoke(rebusConfigurer, context);
+                return rebusConfigurer.Start();
+            })
+            .SingleInstance();
+
+        // Register ISyncBus, resolved from IBus
+        containerBuilder
+            .Register(c => c.Resolve<IBus>().Advanced.SyncBus)
+            .InstancePerDependency()
+            .ExternallyOwned();
+
+        // Register IMessageContext
+        containerBuilder
+            .Register(_ =>
+            {
+                var messageContext = MessageContext.Current;
+                if (messageContext == null)
+                {
+                    throw new InvalidOperationException("MessageContext.Current was null, which probably means that IMessageContext was resolved outside of a Rebus message handler transaction");
+                }
+                return messageContext;
+            })
+            .InstancePerDependency()
+            .ExternallyOwned();
+    }
+
+    /// <summary>
+    /// Resolves all handlers for the given <typeparamref name="TMessage"/> message type
+    /// </summary>
+    public async Task<IEnumerable<IHandleMessages<TMessage>>> GetHandlers<TMessage>(TMessage message, ITransactionContext transactionContext)
+    {
+        ILifetimeScope CreateLifetimeScope()
+        {
+            var scope = _container.BeginLifetimeScope();
+            transactionContext.OnDisposed(_ => scope.Dispose());
+            return scope;
+        }
+
+        Func<ILifetimeScope, IEnumerable<IHandleMessages>> GetResolveForMessageType(Type messageType)
+        {
+            if (messageType.IsAssignableTo(typeof(IFailed<>)))
+            {
+                var containedMessageType = messageType.GetGenericTypeParameters(typeof(IFailed<>)).Single();
+                var additionalTypesToResolveHandlersFor = containedMessageType.GetBaseTypes(includeSelf: false);
+                var typesToResolve = new[] { containedMessageType }.Concat(additionalTypesToResolveHandlersFor)
+                    .Select(type => typeof(IEnumerable<>).MakeGenericType(typeof(IHandleMessages<>).MakeGenericType(typeof(IFailed<>).MakeGenericType(type))))
+                    .ToArray();
+
+                return scope =>
+                {
+                    var handlers = new List<IHandleMessages<TMessage>>();
+
+                    foreach (var type in typesToResolve)
                     {
-                        throw new InvalidOperationException(LongExceptionMessage);
+                        handlers.AddRange((IEnumerable<IHandleMessages<TMessage>>)scope.Resolve(type));
                     }
 
-                    autofacHandlerActivatorWasRegistered = true;
+                    return handlers;
                 };
             }
 
-            // Register autofac starter
-            containerBuilder.RegisterInstance(this).As<AutofacHandlerActivator>()
-                .AutoActivate()
-                .SingleInstance()
-                .OnActivated(e =>
-                {
-                    if (e.Instance._container == null)
-                    {
-                        e.Instance._container = e.Context.Resolve<ILifetimeScope>();
-                    }
-
-                    if (!startBus) return;
-                    
-                    // Start the bus up if requested
-                    try
-                    {
-                        e.Context.Resolve<IBus>();
-                    }
-                    catch (Exception exception)
-                    {
-                        throw new RebusConfigurationException(exception, "Could not start Rebus");
-                    }
-                });
-
-            // Register IBus
-            containerBuilder
-                .Register(context =>
-                {
-                    if (_container == null)
-                    {
-                        _container = context.Resolve<ILifetimeScope>();
-                    }
-
-                    var rebusConfigurer = Configure.With(this);
-                    configureBus.Invoke(rebusConfigurer, context);
-                    return rebusConfigurer.Start();
-                })
-                .SingleInstance();
-
-            // Register ISyncBus, resolved from IBus
-            containerBuilder
-                .Register(c => c.Resolve<IBus>().Advanced.SyncBus)
-                .InstancePerDependency()
-                .ExternallyOwned();
-
-            // Register IMessageContext
-            containerBuilder
-                .Register(c =>
-                {
-                    var messageContext = MessageContext.Current;
-                    if (messageContext == null)
-                    {
-                        throw new InvalidOperationException("MessageContext.Current was null, which probably means that IMessageContext was resolved outside of a Rebus message handler transaction");
-                    }
-                    return messageContext;
-                })
-                .InstancePerDependency()
-                .ExternallyOwned();
+            return scope => scope.Resolve<IEnumerable<IHandleMessages<TMessage>>>();
         }
 
-        /// <summary>
-        /// Resolves all handlers for the given <typeparamref name="TMessage"/> message type
-        /// </summary>
-        public async Task<IEnumerable<IHandleMessages<TMessage>>> GetHandlers<TMessage>(TMessage message, ITransactionContext transactionContext)
-        {
-            ILifetimeScope CreateLifetimeScope()
-            {
-                var scope = _container.BeginLifetimeScope();
-                transactionContext.OnDisposed(ctx => scope.Dispose());
-                return scope;
-            }
+        var lifetimeScope = transactionContext.GetOrAdd("current-autofac-lifetime-scope", CreateLifetimeScope);
+        var resolver = _resolvers.GetOrAdd(typeof(TMessage), GetResolveForMessageType);
 
-            var lifetimeScope = transactionContext.GetOrAdd("current-autofac-lifetime-scope", CreateLifetimeScope);
-
-            var resolver = _resolvers.GetOrAdd(typeof(TMessage),
-                messageType =>
-                {
-                    if (messageType.IsAssignableTo(typeof(IFailed<>)))
-                    {
-                        var containedMessageType = messageType.GetGenericTypeParameters(typeof(IFailed<>)).Single();
-                        var additionalTypesToResolveHandlersFor = containedMessageType.GetBaseTypes(includeSelf: false);
-                        var typesToResolve = new[] { containedMessageType }
-                            .Concat(additionalTypesToResolveHandlersFor)
-                            .Select(type => typeof(IEnumerable<>).MakeGenericType(typeof(IHandleMessages<>).MakeGenericType(typeof(IFailed<>).MakeGenericType(type))))
-                            .ToArray();
-
-                        return scope =>
-                        {
-                            var handlers = new List<IHandleMessages<TMessage>>();
-
-                            foreach (var type in typesToResolve)
-                            {
-                                handlers.AddRange((IEnumerable<IHandleMessages<TMessage>>)scope.Resolve(type));
-                            }
-
-                            return handlers;
-                        };
-                    }
-
-                    return scope => scope.Resolve<IEnumerable<IHandleMessages<TMessage>>>();
-                });
-
-            return (IEnumerable<IHandleMessages<TMessage>>)resolver(lifetimeScope);
-        }
-
-        readonly ConcurrentDictionary<Type, Func<ILifetimeScope, IEnumerable<IHandleMessages>>> _resolvers = new ConcurrentDictionary<Type, Func<ILifetimeScope, IEnumerable<IHandleMessages>>>();
+        return (IEnumerable<IHandleMessages<TMessage>>)resolver(lifetimeScope);
     }
 }

@@ -16,84 +16,83 @@ using Rebus.Transport.InMem;
 // ReSharper disable ArgumentsStyleLiteral
 #pragma warning disable 1998
 
-namespace Rebus.Autofac.Tests.Bugs
+namespace Rebus.Autofac.Tests.Bugs;
+
+[TestFixture]
+public class DoesNotTryToHandleMessagesBeforeTheBusIsProperlyStarted : FixtureBase
 {
-    [TestFixture]
-    public class DoesNotTryToHandleMessagesBeforeTheBusIsProperlyStarted : FixtureBase
+    [Test]
+    [Repeat(10)]
+    public async Task ItWorks()
     {
-        [Test]
-        [Repeat(10)]
-        public async Task ItWorks()
-        {
-            const string queueName = "testappqueue";
-            const int numberOfMessages = 10;
+        const string queueName = "testappqueue";
+        const int numberOfMessages = 10;
 
-            var network = new InMemNetwork();
-            var listLoggerFactory = new ListLoggerFactory(detailed: true);
-            var sharedCounter = new SharedCounter(numberOfMessages);
+        var network = new InMemNetwork();
+        var listLoggerFactory = new ListLoggerFactory(detailed: true);
+        var sharedCounter = new SharedCounter(numberOfMessages);
 
-            Using(sharedCounter);
+        Using(sharedCounter);
 
-            // deliver a message for our endpoint
-            network.CreateQueue(queueName);
+        // deliver a message for our endpoint
+        network.CreateQueue(queueName);
             
-            var client = GetOneWayClient(network, listLoggerFactory);
+        var client = GetOneWayClient(network, listLoggerFactory);
             
-            numberOfMessages.Times(() => client.Advanced.Routing.Send(queueName, "HEJ MED DIG MIN VEN").Wait());
+        numberOfMessages.Times(() => client.Advanced.Routing.Send(queueName, "HEJ MED DIG MIN VEN").Wait());
 
-            // prepare our endpoint
-            var builder = new ContainerBuilder();
+        // prepare our endpoint
+        var builder = new ContainerBuilder();
 
-            builder.RegisterRebus(
-                config => config
-                    .Logging(l => l.Use(listLoggerFactory))
-                    .Transport(t => t.UseInMemoryTransport(network, queueName))
-                    .Options(o =>
-                    {
-                        o.SetNumberOfWorkers(1);
-                        o.SetMaxParallelism(30);
-                    })
-            );
-            // obtain bus instance for subscriptions...
-            builder.RegisterBuildCallback(c => {
-                var bus = c.Resolve<IBus>();
-            });
-
-            builder.RegisterHandler<MyMessageHandler>();
-
-            builder.RegisterInstance(sharedCounter);
-
-            // start it
-            using (builder.Build())
-            {
-                sharedCounter.WaitForResetEvent(timeoutSeconds: 5);
-            }
-
-            // ensure no exceptions occurred
-
-            Assert.That(listLoggerFactory.Count(log => log.Level >= LogLevel.Warn), Is.EqualTo(0),
-                "Expected exactly ZERO warnings");
-        }
-
-        IBus GetOneWayClient(InMemNetwork network, ListLoggerFactory listLoggerFactory)
-        {
-            var activator = new BuiltinHandlerActivator();
-
-            Using(activator);
-
-            return Configure.With(activator)
+        builder.RegisterRebus(
+            config => config
                 .Logging(l => l.Use(listLoggerFactory))
-                .Transport(t => t.UseInMemoryTransportAsOneWayClient(network))
-                .Start();
-        }
+                .Transport(t => t.UseInMemoryTransport(network, queueName))
+                .Options(o =>
+                {
+                    o.SetNumberOfWorkers(1);
+                    o.SetMaxParallelism(30);
+                })
+        );
+        // obtain bus instance for subscriptions...
+        builder.RegisterBuildCallback(c => {
+            var bus = c.Resolve<IBus>();
+        });
 
-        class MyMessageHandler : IHandleMessages<string>
+        builder.RegisterHandler<MyMessageHandler>();
+
+        builder.RegisterInstance(sharedCounter);
+
+        // start it
+        using (builder.Build())
         {
-            readonly SharedCounter _sharedCounter;
-
-            public MyMessageHandler(SharedCounter sharedCounter) => _sharedCounter = sharedCounter;
-
-            public async Task Handle(string message) => _sharedCounter.Decrement();
+            sharedCounter.WaitForResetEvent(timeoutSeconds: 5);
         }
+
+        // ensure no exceptions occurred
+
+        Assert.That(listLoggerFactory.Count(log => log.Level >= LogLevel.Warn), Is.EqualTo(0),
+            "Expected exactly ZERO warnings");
+    }
+
+    IBus GetOneWayClient(InMemNetwork network, ListLoggerFactory listLoggerFactory)
+    {
+        var activator = new BuiltinHandlerActivator();
+
+        Using(activator);
+
+        return Configure.With(activator)
+            .Logging(l => l.Use(listLoggerFactory))
+            .Transport(t => t.UseInMemoryTransportAsOneWayClient(network))
+            .Start();
+    }
+
+    class MyMessageHandler : IHandleMessages<string>
+    {
+        readonly SharedCounter _sharedCounter;
+
+        public MyMessageHandler(SharedCounter sharedCounter) => _sharedCounter = sharedCounter;
+
+        public async Task Handle(string message) => _sharedCounter.Decrement();
     }
 }

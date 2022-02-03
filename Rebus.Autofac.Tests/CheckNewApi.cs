@@ -9,57 +9,56 @@ using Rebus.Transport.InMem;
 // ReSharper disable RedundantArgumentDefaultValue
 // ReSharper disable ArgumentsStyleNamedExpression
 
-namespace Rebus.Autofac.Tests
+namespace Rebus.Autofac.Tests;
+
+[TestFixture]
+public class CheckNewApi : FixtureBase
 {
-    [TestFixture]
-    public class CheckNewApi : FixtureBase
+    [Test]
+    public void ThisIsHowItWorks()
     {
-        [Test]
-        public void ThisIsHowItWorks()
-        {
-            var builder = new ContainerBuilder();
+        var builder = new ContainerBuilder();
 
-            builder.RegisterRebus(configure => configure
-                .Logging(l => l.Console(minLevel: LogLevel.Debug))
-                .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")));
+        builder.RegisterRebus(configure => configure
+            .Logging(l => l.Console(minLevel: LogLevel.Debug))
+            .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")));
 
-            var container = builder.Build();
+        var container = builder.Build();
 
-            Using(container);
-        }
+        Using(container);
+    }
 
-        [Test]
-        public void ThrowsWhenAddingTwice()
-        {
-            var builder = new ContainerBuilder();
+    [Test]
+    public void ThrowsWhenAddingTwice()
+    {
+        var builder = new ContainerBuilder();
 
-            builder.RegisterRebus(configure => configure
-                .Logging(l => l.Console(minLevel: LogLevel.Debug))
-                .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")));
+        builder.RegisterRebus(configure => configure
+            .Logging(l => l.Console(minLevel: LogLevel.Debug))
+            .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")));
 
-            builder.RegisterRebus(configure => configure
-                .Logging(l => l.Console(minLevel: LogLevel.Debug))
-                .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")));
+        builder.RegisterRebus(configure => configure
+            .Logging(l => l.Console(minLevel: LogLevel.Debug))
+            .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")));
 
-            Assert.Throws<InvalidOperationException>(() => builder.Build());
-        }
+        Assert.Throws<InvalidOperationException>(() => builder.Build());
+    }
 
-        [Test]
-        public void DoesNotThrowWhenRegisteringTwiceIfExplicitlyDisabled()
-        {
-            var builder = new ContainerBuilder();
+    [Test]
+    public void DoesNotThrowWhenRegisteringTwiceIfExplicitlyDisabled()
+    {
+        var builder = new ContainerBuilder();
 
-            builder.RegisterRebus(configure => configure
+        builder.RegisterRebus(configure => configure
                 .Logging(l => l.Console(minLevel: LogLevel.Debug))
                 .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")),
-                disableMultipleRegistrationsCheck: true);
+            disableMultipleRegistrationsCheck: true);
 
-            builder.RegisterRebus(configure => configure
+        builder.RegisterRebus(configure => configure
                 .Logging(l => l.Console(minLevel: LogLevel.Debug))
                 .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")),
-                disableMultipleRegistrationsCheck: true);
+            disableMultipleRegistrationsCheck: true);
 
-            Assert.DoesNotThrow(() => builder.Build());
-        }
+        Assert.DoesNotThrow(() => builder.Build());
     }
 }

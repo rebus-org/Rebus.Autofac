@@ -3,29 +3,28 @@ using System.Linq;
 using Autofac;
 using NUnit.Framework;
 
-namespace Rebus.Autofac.Tests
+namespace Rebus.Autofac.Tests;
+
+[TestFixture]
+public class TestAutofacAssumptions
 {
-    [TestFixture]
-    public class TestAutofacAssumptions
+    [Test]
+    public void CanResolveLotsOfStuff()
     {
-        [Test]
-        public void CanResolveLotsOfStuff()
-        {
-            var builder = new ContainerBuilder();
+        var builder = new ContainerBuilder();
 
-            builder.RegisterType<Impl11>().As(typeof (ISomething)).InstancePerDependency();
-            builder.RegisterType<Impl12>().As(typeof (ISomething)).InstancePerDependency();
+        builder.RegisterType<Impl11>().As(typeof (ISomething)).InstancePerDependency();
+        builder.RegisterType<Impl12>().As(typeof (ISomething)).InstancePerDependency();
 
-            var container = builder.Build();
+        var container = builder.Build();
 
-            var somethings = container.Resolve<IEnumerable<ISomething>>().ToArray();
+        var somethings = container.Resolve<IEnumerable<ISomething>>().ToArray();
 
-            Assert.That(somethings.Length, Is.EqualTo(2));
-        }
-
-        interface ISomething { }
-
-        class Impl11 : ISomething { }
-        class Impl12 : ISomething { }
+        Assert.That(somethings.Length, Is.EqualTo(2));
     }
+
+    interface ISomething { }
+
+    class Impl11 : ISomething { }
+    class Impl12 : ISomething { }
 }
