@@ -1,6 +1,5 @@
 ﻿using System;
 using Autofac;
-using Autofac.Core;
 using NUnit.Framework;
 using Rebus.Config;
 using Rebus.Logging;
@@ -19,9 +18,11 @@ public class CheckNewApi : FixtureBase
     {
         var builder = new ContainerBuilder();
 
-        builder.RegisterRebus(configure => configure
-            .Logging(l => l.Console(minLevel: LogLevel.Debug))
-            .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")));
+        builder.RegisterRebus(
+            configure => configure
+                .Logging(l => l.Console(minLevel: LogLevel.Debug))
+                .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test"))
+        );
 
         var container = builder.Build();
 

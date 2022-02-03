@@ -120,14 +120,14 @@ AVG: 4,026
         builder.RegisterHandler<PolymorphicMessageHandler>();
         builder.RegisterHandler<PolymorphicMessageHandler2>();
 
-        var activator = new AutofacHandlerActivator(builder, (configurer, context) => { }, startBus: false, enablePolymorphicDispatch: true, multipleRegistrationsCheckEnabled: true);
+        var activator = new AutofacHandlerActivator(builder, (_, _) => { }, startBus: false, enablePolymorphicDispatch: true, multipleRegistrationsCheckEnabled: true);
         var timeSpans = new List<TimeSpan>();
 
-        using (var container = builder.Build())
+        await using (builder.Build())
         {
             foreach (var sample in Enumerable.Range(1, samples))
             {
-                var elapsed = await TakeSample(sample, ops, container, activator);
+                var elapsed = await TakeSample(sample, ops, activator);
 
                 timeSpans.Add(elapsed);
             }
@@ -140,7 +140,7 @@ AVG: 4,026
 AVG: {timeSpans.Select(t => t.TotalSeconds).Average():0.000}");
     }
 
-    static async Task<TimeSpan> TakeSample(int sample, int ops, IContainer container, AutofacHandlerActivator activator)
+    static async Task<TimeSpan> TakeSample(int sample, int ops, AutofacHandlerActivator activator)
     {
         Console.WriteLine($"Running sample # {sample}");
 
