@@ -73,7 +73,9 @@ class AutofacHandlerActivator : IHandlerActivator
                 // Start the bus up if requested
                 try
                 {
-                    e.Context.Resolve<IBus>();
+                    var busStarter = e.Context.Resolve<IBusStarter>();
+
+                    busStarter.Start();
                 }
                 catch (Exception exception)
                 {
@@ -81,7 +83,7 @@ class AutofacHandlerActivator : IHandlerActivator
                 }
             });
 
-        // Register IBus
+        // Register IBusStarter
         containerBuilder
             .Register(context =>
             {
@@ -89,8 +91,13 @@ class AutofacHandlerActivator : IHandlerActivator
 
                 var rebusConfigurer = Configure.With(this);
                 configureBus.Invoke(rebusConfigurer, context);
-                return rebusConfigurer.Start();
+                return rebusConfigurer.Create();
             })
+            .SingleInstance();
+
+        // Register IBus
+        containerBuilder
+            .Register(context => context.Resolve<IBusStarter>().Bus)
             .SingleInstance();
 
         // Register ISyncBus, resolved from IBus

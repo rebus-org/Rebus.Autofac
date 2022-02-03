@@ -52,6 +52,10 @@
 ## 7.3.0
 * Move multiple registrations check to the builder's registration callback, because it doesn't interfere with the container's `IBus` registration. This way, `IBus` can be overridden/decorated if desired. The check can also be disabled alltogether by passing `disableMultipleRegistrationsCheck: true` to the `RegisterRebus` method.
 
+## 8.0.0
+* Rename `startBus` to `startAutomatically` to be consistent with other modern containers
+* Add container extension method `container.StartBus()` to make starting the bus more convenient
+
 [kendallb]: https://github.com/kendallb
 [leomenca]: https://github.com/leomenca
 [oliverhanappi]: https://github.com/oliverhanappi

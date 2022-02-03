@@ -1,6 +1,7 @@
 ﻿using System;
 using Autofac;
 using NUnit.Framework;
+using Rebus.Bus;
 using Rebus.Config;
 using Rebus.Logging;
 using Rebus.Tests.Contracts;
@@ -14,6 +15,52 @@ namespace Rebus.Autofac.Tests;
 [TestFixture]
 public class CheckNewApi : FixtureBase
 {
+    [Test]
+    public void ThisIsHowItWorks_StartsAutomatically()
+    {
+        var builder = new ContainerBuilder();
+
+        builder.RegisterRebus(
+            configure => configure
+                .Logging(l => l.Console(minLevel: LogLevel.Debug))
+                .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test"))
+        );
+
+        var container = builder.Build();
+
+        Using(container);
+
+        var bus = container.Resolve<IBus>();
+        
+        Assert.That(bus.Advanced.Workers.Count, Is.EqualTo(1));
+    }
+
+    [Test]
+    public void ThisIsHowItWorks_StartManually()
+    {
+        var builder = new ContainerBuilder();
+
+        builder.RegisterRebus(
+            configure => configure
+                .Logging(l => l.Console(minLevel: LogLevel.Debug))
+                .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "ioc-test")),
+
+            startAutomatically: false
+        );
+
+        var container = builder.Build();
+
+        Using(container);
+
+        var bus = container.Resolve<IBus>();
+        
+        Assert.That(bus.Advanced.Workers.Count, Is.EqualTo(0));
+
+        container.StartBus();
+
+        Assert.That(bus.Advanced.Workers.Count, Is.EqualTo(1));
+    }
+
     [Test]
     public void ThisIsHowItWorks()
     {

@@ -22,12 +22,12 @@ public static class ContainerBuilderExtensions
     /// bus and set of handlers registered within an Autofac IoC container. If you wish to have multiple handlers, you will need
     /// to split up the bus into a one way bus, and multiple handler registrations.
     /// </summary>
-    public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, RebusConfigurer> configure, bool startBus = true, bool enablePolymorphicDispatch = false, bool disableMultipleRegistrationsCheck = false)
+    public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, RebusConfigurer> configure, bool startAutomatically = true, bool enablePolymorphicDispatch = false, bool disableMultipleRegistrationsCheck = false)
     {
         if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
         if (configure == null) throw new ArgumentNullException(nameof(configure));
 
-        new AutofacHandlerActivator(containerBuilder, (configurer, _) => configure(configurer), startBus, enablePolymorphicDispatch, !disableMultipleRegistrationsCheck);
+        new AutofacHandlerActivator(containerBuilder, (configurer, _) => configure(configurer), startAutomatically, enablePolymorphicDispatch, !disableMultipleRegistrationsCheck);
     }
 
     /// <summary>
@@ -36,12 +36,12 @@ public static class ContainerBuilderExtensions
     /// bus and set of handlers registered within an Autofac IoC container. If you wish to have multiple handlers, you will need
     /// to split up the bus into a one way bus, and multiple handler registrations.
     /// </summary>
-    public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, IComponentContext, RebusConfigurer> configure, bool startBus = true, bool enablePolymorphicDispatch = false, bool disableMultipleRegistrationsCheck = false)
+    public static void RegisterRebus(this ContainerBuilder containerBuilder, Func<RebusConfigurer, IComponentContext, RebusConfigurer> configure, bool startAutomatically = true, bool enablePolymorphicDispatch = false, bool disableMultipleRegistrationsCheck = false)
     {
         if (containerBuilder == null) throw new ArgumentNullException(nameof(containerBuilder));
         if (configure == null) throw new ArgumentNullException(nameof(configure));
 
-        new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer, context), startBus, enablePolymorphicDispatch, !disableMultipleRegistrationsCheck);
+        new AutofacHandlerActivator(containerBuilder, (configurer, context) => configure(configurer, context), startAutomatically, enablePolymorphicDispatch, !disableMultipleRegistrationsCheck);
     }
 
     /// <summary>

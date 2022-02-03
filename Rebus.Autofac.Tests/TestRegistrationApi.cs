@@ -9,6 +9,7 @@ using Rebus.Bus;
 using Rebus.Config;
 using Rebus.Handlers;
 using Rebus.Transport.InMem;
+// ReSharper disable ClassNeverInstantiated.Local
 
 namespace Rebus.Autofac.Tests;
 
@@ -22,21 +23,17 @@ public class TestRegistrationApi
 
         builder.RegisterHandler<MsgHndlr>();
 
-        using (var container = builder.Build())
-        {
-            var stringHandlers = container.Resolve<IEnumerable<IHandleMessages<string>>>().ToList();
+        using var container = builder.Build();
 
-            Assert.That(stringHandlers.Count, Is.EqualTo(1));
-            Assert.That(stringHandlers[0], Is.TypeOf<MsgHndlr>());
-        }
+        var stringHandlers = container.Resolve<IEnumerable<IHandleMessages<string>>>().ToList();
+
+        Assert.That(stringHandlers.Count, Is.EqualTo(1));
+        Assert.That(stringHandlers[0], Is.TypeOf<MsgHndlr>());
     }
 
     class MsgHndlr : IHandleMessages<string>
     {
-        public Task Handle(string message)
-        {
-            throw new System.NotImplementedException();
-        }
+        public Task Handle(string message) => throw new NotImplementedException();
     }
 
     [Test]
@@ -47,12 +44,11 @@ public class TestRegistrationApi
         builder.RegisterType<EventAggregator>().SingleInstance();
         builder.RegisterHandlersFromAssemblyOf<FirstHandler>();
 
-        using (var container = builder.Build())
-        {
-            var stringHandlers = container.Resolve<IEnumerable<IHandleMessages<string>>>().ToList();
+        using var container = builder.Build();
+        
+        var stringHandlers = container.Resolve<IEnumerable<IHandleMessages<string>>>().ToList();
 
-            Assert.That(stringHandlers.Count, Is.EqualTo(2));
-        }
+        Assert.That(stringHandlers.Count, Is.EqualTo(2));
     }
 
     [Test]
@@ -74,20 +70,19 @@ public class TestRegistrationApi
                 })
         );
 
-        using (var container = builder.Build())
-        {
-            var bus = container.Resolve<IBus>();
+        await using var container = builder.Build();
+        
+        var bus = container.Resolve<IBus>();
 
-            await bus.SendLocal("HEJ MED DIG");
-            await bus.SendLocal("HVORDAN GÅR DET?");
+        await bus.SendLocal("HEJ MED DIG");
+        await bus.SendLocal("HVORDAN GÅR DET?");
 
-            await Task.Delay(500);
+        await Task.Delay(500);
 
-            var events = container.Resolve<EventAggregator>().ToList();
+        var events = container.Resolve<EventAggregator>().ToList();
 
-            Assert.That(events.Count, Is.EqualTo(4));
-            Console.WriteLine(string.Join(Environment.NewLine, events));
-        }
+        Assert.That(events.Count, Is.EqualTo(4));
+        Console.WriteLine(string.Join(Environment.NewLine, events));
     }
 
     [Test]
@@ -108,19 +103,18 @@ public class TestRegistrationApi
                 })
         );
 
-        using (var container = builder.Build())
-        {
-            var bus = container.Resolve<IBus>();
+        await using var container = builder.Build();
+        
+        var bus = container.Resolve<IBus>();
 
-            await bus.SendLocal("HEJ MED DIG");
-            await bus.SendLocal("HVORDAN GÅR DET?");
+        await bus.SendLocal("HEJ MED DIG");
+        await bus.SendLocal("HVORDAN GÅR DET?");
 
-            await Task.Delay(500);
+        await Task.Delay(500);
 
-            var events = container.Resolve<EventAggregator>().ToList();
+        var events = container.Resolve<EventAggregator>().ToList();
 
-            Assert.That(events.Count, Is.EqualTo(4));
-            Console.WriteLine(string.Join(Environment.NewLine, events));
-        }
+        Assert.That(events.Count, Is.EqualTo(4));
+        Console.WriteLine(string.Join(Environment.NewLine, events));
     }
 }
