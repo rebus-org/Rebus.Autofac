@@ -109,7 +109,7 @@ AVG: 4,026
          */
     [TestCase(10, 1000000)]
     [TestCase(10, 10000)]
-    [Ignore("takes a long time")]
+    [Explicit("takes a long time")]
     public async Task Run(int samples, int ops)
     {
         Console.WriteLine($"Running {samples} samples of {ops} iterations");
