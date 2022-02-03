@@ -13,4 +13,4 @@ build_script:
   - dotnet build Rebus.Autofac -c Release --no-restore
 
 test_script:
-  - dotnet build Rebus.Autofac.Tests -c Release --no-restore 
+  - dotnet test Rebus.Autofac.Tests -c Release --no-restore 
