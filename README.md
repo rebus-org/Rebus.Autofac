@@ -35,7 +35,7 @@ container.Dispose();
 It will automatically register the following services in Autofac:
 
 * `IBus` – this is the bus singleton
-* `IBusStart` – this is the bus starter you can use to start it manually
+* `IBusStarter` – this is the bus starter you can use to start it manually
 * `IMessageContext` – this is the current message context – can be injected into Rebus message handlers and everything resolved at the time of receiving a new message
 * `ISyncBus` – this is the synchronous bus instance – can be used in places, where a `Task`-based asynchronous API is not desired, e.g. from deep within ASP.NET or WPF applications, which would deadlock if you went `.Wait()` on a `Task`
 
