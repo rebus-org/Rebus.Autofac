@@ -6,7 +6,7 @@
 		<LangVersion>10</LangVersion>
 		<Authors>mookid8000</Authors>
 		<PackageProjectUrl>https://rebus.fm/what-is-rebus/</PackageProjectUrl>
-		<Copyright>Copyright 2012-2016</Copyright>
+		<Copyright>Copyright Rebus FM ApS 2012</Copyright>
 		<PackageTags>rebus autofac ioc dependency-injection</PackageTags>
 		<PackageIconUrl></PackageIconUrl>
 		<PackageDescription>Provides an Autofac container adapter for Rebus</PackageDescription>
