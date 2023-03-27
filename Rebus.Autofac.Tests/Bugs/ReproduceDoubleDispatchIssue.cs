@@ -6,7 +6,6 @@ using Autofac;
 using NUnit.Framework;
 using Rebus.Bus;
 using Rebus.Config;
-using Rebus.Persistence.InMem;
 using Rebus.Retry.Simple;
 using Rebus.Tests.Contracts;
 using Rebus.Tests.Contracts.Extensions;
@@ -32,7 +31,6 @@ public class ReproduceDoubleDispatchIssue : FixtureBase
             configurer
                 .Logging(l => l.ColoredConsole())
                 .Transport(x => x.UseInMemoryTransport(new InMemNetwork(true), queueName))
-                .Subscriptions(s => s.StoreInMemory(new InMemorySubscriberStore()))
                 .Options(x =>
                 {
                     x.SetMaxParallelism(1);
@@ -45,22 +43,6 @@ public class ReproduceDoubleDispatchIssue : FixtureBase
         builder.RegisterHandlersFromAssemblyOf<ControllerChangeMessageHandler>();
 
         builder.RegisterInstance(controllerChangeMessages).AsSelf();
-
-        //builder.RegisterBuildCallback(c =>
-        //{
-        //    var bus = c.Resolve<IBus>();
-        //    var messageTypes = AssemblyHelpers.GetImplementations(typeof(IHandleMessages))
-        //        .SelectMany(x => x.GetInterfaces())
-        //        .Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IHandleMessages<>))
-        //        .SelectMany(x => x.GetGenericArguments())
-        //        .Where(x => typeof(RebusMessage).IsAssignableFrom(x))
-        //        .ToList();
-
-        //    foreach (var messageType in messageTypes)
-        //    {
-        //        bus.Subscribe(messageType).GetAwaiter().GetResult();
-        //    }
-        //});
 
         await using var container = builder.Build();
 

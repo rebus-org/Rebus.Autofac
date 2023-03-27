@@ -1,16 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
-		<LangVersion>10</LangVersion>
+		<TargetFramework>net7.0</TargetFramework>
+		<LangVersion>11</LangVersion>
 	</PropertyGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\AdditionalHandlerAssembly\AdditionalHandlerAssembly.csproj" />
 		<ProjectReference Include="..\MessageHandlers\MessageHandlers.csproj" />
 		<ProjectReference Include="..\Rebus.Autofac\Rebus.Autofac.csproj" />
-		<PackageReference Include="Autofac" Version="5.0.0" />
-		<PackageReference Include="microsoft.net.test.sdk" Version="16.1.1" />
-		<PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
-		<PackageReference Include="Rebus" Version="6.0.0" />
-		<PackageReference Include="Rebus.Tests.Contracts" Version="6.0.0" />
+		<PackageReference Include="Autofac" Version="7.0.0" />
+		<PackageReference Include="microsoft.net.test.sdk" Version="17.5.0" />
+		<PackageReference Include="NUnit3TestAdapter" Version="4.4.2" />
+		<PackageReference Include="Rebus.Tests.Contracts" Version="8.0.0-alpha01" />
 	</ItemGroup>
 </Project>
