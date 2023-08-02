@@ -9,6 +9,7 @@ using NUnit.Framework;
 using Rebus.Bus;
 using Rebus.Config;
 using Rebus.Handlers;
+using Rebus.Retry;
 using Rebus.Retry.Simple;
 using Rebus.Tests.Contracts;
 using Rebus.Transport;
@@ -29,7 +30,7 @@ public class RegistersHandlerAsImplementationOfIFailedToo : FixtureBase
 
         builder.RegisterRebus(configurer => configurer
             .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "2nd-level-test"))
-            .Options(o => o.SimpleRetryStrategy(
+            .Options(o => o.RetryStrategy(
                 secondLevelRetriesEnabled: true,
                 maxDeliveryAttempts: 1
             ))
@@ -100,7 +101,7 @@ public class RegistersHandlerAsImplementationOfIFailedToo : FixtureBase
 
     public class FailedMessage<T> : IFailed<T>
     {
-        public FailedMessage(T message, string errorDescription, Dictionary<string, string> headers, IEnumerable<Exception> exceptions)
+        public FailedMessage(T message, string errorDescription, Dictionary<string, string> headers, IEnumerable<ExceptionInfo> exceptions)
         {
             Message = message;
             ErrorDescription = errorDescription;
@@ -111,7 +112,7 @@ public class RegistersHandlerAsImplementationOfIFailedToo : FixtureBase
         public T Message { get; }
         public string ErrorDescription { get; }
         public Dictionary<string, string> Headers { get; }
-        public IEnumerable<Exception> Exceptions { get; }
+        public IEnumerable<ExceptionInfo> Exceptions { get; }
     }
 
     class TestHandler : IHandleMessages<string>, IHandleMessages<IFailed<string>>

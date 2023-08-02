@@ -29,7 +29,7 @@ public class CanGetMessageHandlerWhenDoingSecondLevelRetries
             configure
                 .Logging(l => l.None())
                 .Transport(t => t.UseInMemoryTransport(network, "test"))
-                .Options(o => o.SimpleRetryStrategy(secondLevelRetriesEnabled: true, maxDeliveryAttempts: 1))
+                .Options(o => o.RetryStrategy(secondLevelRetriesEnabled: true, maxDeliveryAttempts: 1))
         );
 
         builder.RegisterHandler<MyTestHandler>();

@@ -34,7 +34,7 @@ public class ReproduceDoubleDispatchIssue : FixtureBase
                 .Options(x =>
                 {
                     x.SetMaxParallelism(1);
-                    x.SimpleRetryStrategy(maxDeliveryAttempts: int.MaxValue);
+                    x.RetryStrategy(maxDeliveryAttempts: int.MaxValue);
                 });
 
             return configurer;
