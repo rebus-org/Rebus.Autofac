@@ -7,9 +7,9 @@
 		<ProjectReference Include="..\AdditionalHandlerAssembly\AdditionalHandlerAssembly.csproj" />
 		<ProjectReference Include="..\MessageHandlers\MessageHandlers.csproj" />
 		<ProjectReference Include="..\Rebus.Autofac\Rebus.Autofac.csproj" />
-		<PackageReference Include="Autofac" Version="7.0.0" />
-		<PackageReference Include="microsoft.net.test.sdk" Version="17.5.0" />
-		<PackageReference Include="NUnit3TestAdapter" Version="4.4.2" />
+		<PackageReference Include="Autofac" Version="7.0.1" />
+		<PackageReference Include="microsoft.net.test.sdk" Version="17.6.3" />
+		<PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
 		<PackageReference Include="Rebus.Tests.Contracts" Version="8.0.0-alpha01" />
 	</ItemGroup>
 </Project>
