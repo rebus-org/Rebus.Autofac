@@ -10,6 +10,6 @@
 		<PackageReference Include="Autofac" Version="7.0.1" />
 		<PackageReference Include="microsoft.net.test.sdk" Version="17.6.3" />
 		<PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
-		<PackageReference Include="Rebus.Tests.Contracts" Version="8.0.0-alpha01" />
+		<PackageReference Include="Rebus.Tests.Contracts" Version="8.0.0-alpha09" />
 	</ItemGroup>
 </Project>
