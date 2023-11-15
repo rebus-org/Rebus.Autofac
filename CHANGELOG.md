@@ -56,9 +56,9 @@
 * Rename `startBus` to `startAutomatically` to be consistent with other modern containers
 * Add container extension method `container.StartBus()` to make starting the bus more convenient
 
-## 9.0.0-alpha03
+## 9.0.0
 * Update to Rebus 8
-* Update to Autofac 7.0.1
+* Update to Autofac 7.1.0
 
 [kendallb]: https://github.com/kendallb
 [leomenca]: https://github.com/leomenca
